@@ -24,6 +24,7 @@
     "node-mailer": "^0.1.1",
     "node-twillo-otp-manager": "^1.0.0",
     "nodemon": "^3.1.11",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "stripe": "^19.3.1"
   }
 }

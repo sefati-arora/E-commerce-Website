@@ -1,10 +1,7 @@
 require("dotenv").config();
 const Models = require("../models/index");
-const express = require("express");
 const Joi = require("joi");
 const jwt = require("jsonwebtoken");
-const fileUpload = require("express-fileupload");
-const bcrypt = require("bcrypt");
 const helper = require("../helper/validation");
 const commonhelper = require("../helper/commonHelper");
 const argon2 = require("argon2");
@@ -76,7 +73,7 @@ module.exports = {
       return res.status(500).json({ message: "ERROR", error });
     }
   },
-  logIn: async (req, res) => {
+  login: async (req, res) => {
     try {
       const schema = Joi.object({
         email: Joi.string().required(),
@@ -334,18 +331,36 @@ module.exports = {
   },
   bookingCreate: async (req, res) => {
     try {
+      const userId =req.user.id
       const schema = Joi.object({
-        userId: Joi.string().required(),
         cartId: Joi.string().required(),
-        addressId:Joi.string().required()
+        addressId: Joi.string().required(),
+        time: Joi.string().required(),
+        bookingId: Joi.string().required(),
       });
       const payload = await helper.validationJoi(req.body, schema);
-      const booking = await Models.bookingModel.create({
-        userId: payload.userId,
-        cartId: payload.cartId,
-         addressId:payload.addressId
+      const defaultAddress = await Models.addressModel.findOne({
+        where: { id: payload.addressId, userId:userId, isDefault: 1 },
       });
-      return res.status(200).json({ message: "BOOKING CREATED!", booking });
+
+      if (!defaultAddress) {
+        return res.status(400).json({
+          message: "Invalid address selected",
+        });
+      }
+      const booking = await Models.bookingModel.create({
+        userId,
+        cartId: payload.cartId,
+        addressId: payload.addressId,
+      });
+      const slot = await Models.bookingSlot.create({
+        userId,
+        bookingId: booking.id,
+        time: payload.time,
+      });
+      return res
+        .status(200)
+        .json({ message: "BOOKING CREATED!", booking, slot });
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: "ERROR", error });
@@ -383,6 +398,29 @@ module.exports = {
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: "ERROR", error });
+    }
+  },
+  addressDefault: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { addressId } = req.body;
+      const user = await Models.addressModel.findOne({
+        where: { id: addressId, userId },
+      });
+      if (!user) {
+        return res.status(404).json({ message: "USER ADDRESS NOT FOUND" });
+      }
+      await Models.addressModel.update(
+        { isDefault: 1 },
+        { where: { id: addressId } }
+      );
+      const update = await Models.addressModel.findOne({
+        where: { id: addressId, userId },
+      });
+      return res.status(200).json({ message: "ADDRESS DEFAULT SET!", update });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR" });
     }
   },
 };

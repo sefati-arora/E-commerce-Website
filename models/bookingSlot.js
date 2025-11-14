@@ -1,0 +1,42 @@
+module.exports=(Sequelize,sequelize,DataTypes) =>
+{
+    return sequelize.define(
+        "bookingSlot",
+        {
+            ...require('./core')(Sequelize,DataTypes),
+            userId:
+            {
+                type:Sequelize.UUID,
+                allowNull:true,
+                references:
+                {
+                    model:"userTable",
+                    key:"id"
+                },
+                 onUpdate:"CASCADE",
+                onDelete:"CASCADE"
+            },
+                bookingId:
+                {
+                    type:Sequelize.UUID,
+                    allowNull:true,
+                    references:
+                    {
+                        model:"bookingTable",
+                        key:"id"
+                    },
+                    onUpdate:"CASCADE",
+                    onDelete:"CASCADE"
+                },
+                time:
+                {
+                    type:DataTypes.STRING(225),
+                    allowNull:true
+                }
+            
+        },
+        {
+            tableName:"bookingSlot"
+        }
+    )
+}

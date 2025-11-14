@@ -11,5 +11,6 @@ module.exports=
      bookingModel:require('./bookingModel')(Sequelize,sequelize,Sequelize.DataTypes),
      addressModel:require('./addressModel')(Sequelize,sequelize,Sequelize.DataTypes),
      notificationModel:require('./notificationModel')(Sequelize,sequelize,Sequelize.DataTypes),
-     transationModel:require('./transationModel')(Sequelize,sequelize,Sequelize.DataTypes)
+     transationModel:require('./transationModel')(Sequelize,sequelize,Sequelize.DataTypes),
+     bookingSlot:require('./bookingSlot')(Sequelize,sequelize,Sequelize.DataTypes)
 }

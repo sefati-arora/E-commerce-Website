@@ -35,6 +35,12 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
             {
                 type:DataTypes.STRING(225),
                 allowNull:true
+            },
+            isDefault:
+            {
+                type:DataTypes.INTEGER,
+                allowNull:true,
+                defaultValue:0  //0  for not default 1 for default
             }
         },
         {

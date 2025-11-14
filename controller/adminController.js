@@ -1,7 +1,6 @@
 require("dotenv").config();
 const Models = require("../models/index");
 const Joi = require("joi");
-const jwt = require("jsonwebtoken");
 const helper = require("../helper/validation");
 const commonhelper = require("../helper/commonHelper");
 module.exports = {
