@@ -1,0 +1,42 @@
+module.exports=(Sequelize,sequelize,DataTypes) =>
+{
+    return sequelize.define(
+        "bookingTable",
+        {
+            ...require('./core')(Sequelize,DataTypes),
+            userId:
+            {
+                type:Sequelize.UUID,
+                allowNull:true,
+                references:
+                {
+                    model:"userTable",
+                    key:"id"
+                },
+                onUpdate:"CASCADE",
+                onDelete:"CASCADE"
+            },
+            status:
+            {
+                type:DataTypes.INTEGER,
+                allowNull:true,
+                defaultValue:0  //0 for cancelled,1 for pendding,2 for delivered
+            },
+            cartId:
+            {
+                type:Sequelize.UUID,
+                allowNull:true,
+                references:
+                {
+                    model:"cartTable",
+                    key:"id"
+                },
+                onUpdate:"CASCADE",
+                onDelete:"CASCADE"
+            }
+        },
+        {
+            tableName:"bookingTable"
+        }
+    )
+}

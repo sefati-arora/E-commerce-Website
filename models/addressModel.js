@@ -1,0 +1,44 @@
+module.exports=(Sequelize,sequelize,DataTypes) =>
+{
+    return sequelize.define(
+        "addressTable",
+        {
+            ...require('./core')(Sequelize,DataTypes),
+            userId:
+            {
+                type:Sequelize.UUID,
+                allowNull:true,
+                references:
+                {
+                    model:"userTable",
+                    key:"id"
+                },
+                onUpdate:"CASCADE",
+                onDelete:"CASCADE"
+            },
+            country:
+            {
+                type:DataTypes.STRING(225),
+                allowNull:true
+            },
+            state:
+            {
+                type:DataTypes.STRING(225),
+                allowNull:true
+            },
+            city:
+            {
+                type:DataTypes.STRING(225),
+                allowNull:true
+            },
+            hnumber:
+            {
+                type:DataTypes.STRING(225),
+                allowNull:true
+            }
+        },
+        {
+            tableName:"addressTable"
+        }
+    )
+}

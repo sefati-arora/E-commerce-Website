@@ -1,0 +1,29 @@
+module.exports=(Sequelize,sequelize,DataTypes) =>
+{
+    return sequelize.define(
+        "cartTable",
+        {
+            ...require('./core')(Sequelize,DataTypes),
+            productId:
+            {
+                type:Sequelize.UUID,
+                allowNull:true,
+                references:
+                {
+                    model:"productTable",
+                    key:"id"
+                },
+                onUpdate:"CASCADE",
+                onDelte:"CASCADE"
+            },
+            Amount:
+            {
+                type:DataTypes.STRING(225),
+                allowNull:true
+            }
+        },
+        {
+            tableName:"cartTable"
+        }
+    )
+}

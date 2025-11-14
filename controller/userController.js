@@ -1,0 +1,526 @@
+require("dotenv").config();
+const Models=require('../models/index')
+const exxpress=require("express")
+const Joi=require("joi")
+const jwt=require("jsonwebtoken")
+const fileUpload=require("express-fileupload")
+const bcrypt=require("bcrypt")
+const helper=require('../helper/validation')
+const commonhelper=require('../helper/commonHelper')
+const argon2 = require("argon2");
+const otpManager = require("node-twillo-otp-manager")(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN,
+  process.env.TWILIO_SERVICE_SID
+);
+module.exports=
+{
+     sidIdGenerateTwilio: async (req, res) => {
+    try {
+      const serviceSid = await otpManager.createServiceSID("Test", "4");
+      console.log("Service SID created:", serviceSid);
+      return serviceSid;
+    } catch (error) {
+      console.error("Error generating Service SID:", error);
+      throw new Error("Failed to generate Service SID");
+    }
+  },
+    signUp:async(req,res) =>
+    {
+        try
+        {
+          const schema=Joi.object({
+            firstName:Joi.string().required(),
+            lastName:Joi.string().required(),
+            phoneNumber:Joi.string().required(),
+            countryCode:Joi.string().required(),
+            email:Joi.string().required(),
+            password:Joi.string().required(),
+            devicetoken:Joi.string().required()
+          });
+          const payload=await helper.validationJoi(req.body,schema);
+          const{firstName,lastName,phoneNumber,countryCode,email,password,devicetoken}=payload;
+          const hashpassword = await argon2.hash(password);
+          const file = req.files?.profile;
+    if (!file) {
+      return res.status(400).json({ message: "Profile image is required" });
+    }
+
+    const path = await commonhelper.fileUpload(file);
+
+          const user=await Models.userModel.create({
+            firstName,
+            lastName,
+            phoneNumber,
+            countryCode,
+            email,
+            password:hashpassword,
+            devicetoken,
+            profile:path
+          })
+      //    if (user) {
+      //   const phone = payload.countryCode + payload.phoneNumber;
+      //   let response = await otpManager.sendOTP(phone);
+      //   console.log(`✅ OTP sent successfully to ${payload.phoneNumber}`);
+      //   console.log(response);
+      // }
+      const token=jwt.sign({id:user.id},process.env.SECRET_KEY)
+          return res.status(200).json({message:"USER CREATED!",user,token})
+        }
+        catch(error)
+        {
+            console.log(error);
+            return res.status(500).json({message:"ERROR",error})
+        }
+    },
+    logIn:async(req,res) =>
+    {
+        try
+        {
+           const schema=Joi.object({
+            email:Joi.string().required(),
+            password:Joi.string().required()
+           })
+           const payload=await helper.validationJoi(req.body,schema);
+           const{email,password}=payload;
+           const hashpassword=await argon2.hash(password);
+           const user=await Models.userModel.create({email,
+            password:hashpassword
+        });
+           const token=jwt.sign({id:user.id},process.env.SECRET_KEY)
+           return res.status(200).json({message:"USER LOGIN",user,token})
+        }
+        catch(error)
+        {
+            console.log(error)
+            return res.status(500).json({message:"ERROR"})
+        }
+    },
+    logOut:async(req,res) =>
+    {
+        try
+        {
+           const userId=req.user.id;
+           const user=await Models.userModel.findOne({where:{id:userId}})
+           if(user)
+           {
+            await Models.userModel.update({devicetoken:null},{where:{id:userId}})
+           }
+          return res.status(200).json({message:"USER LOGOUT!",user})
+        }
+        catch(error)
+        {
+            console.log(error);
+            return res.status(500).json({message:"ERROR"})
+        }
+    },
+    userDelete:async(req,res) =>
+    {
+       try
+       {
+         const userId=req.user.id;
+         const user=await Models.userModel.destroy({where:{id:userId}})
+         return res.status(200).json({message:"USER DELETED!",user})
+       }
+       catch(error)
+       {
+        console.log(error)
+        return res.status(500).json({message:"ERRROR",error})
+       }
+    },
+    forgetpassword:async(req,res) =>
+    {
+        try
+        {
+            const schema=Joi.object({
+                email: Joi.string()
+          .email({ tlds: { allow: ["com", "net", "org", "in", "us"] } })
+          .required()
+          .label("Email"),
+        password: Joi.string().required(),
+      });
+        const payload=await helper.validationJoi(req.body,schema)
+         const{email,password}=payload;
+         const otp=Math.floor(1000 + Math.random() *9000)
+          const hashpassword = await argon2.hash(password, {
+        type: argon2.argon2id,
+        memoryCost: 2 ** 16,
+        timeCost: 3,
+        parallelism: 1,
+      });
+      const user=await Models.userModel.create({email,password:hashpassword})
+      try {
+        await commonhelper.otpSendLinkHTML(req, email, otp);
+        console.log(`OTP sent (${email}): ${otp}`);
+      } catch (error) {
+        await Models.userModel.destroy({ where: { id: user.id } });
+        return res.status(400).json({ message: "Failed to send OTP" });
+      }
+      return res.status(200).json({message:"NEW PASSWORD CREATED!",user})
+        }
+        catch(error)
+        {
+            console.log(error)
+            return res.status(500).json({message:"ERROR"})
+        }
+    },
+    changePassword:async(req,res) =>
+    {
+        try
+        {
+          const schema=Joi.object({
+            oldpassword:Joi.string().required(),
+            newpassword:Joi.string().min(6).required(),
+            confirmpassword:Joi.string().valid(Joi.ref("newpassword")).required()
+          })
+          const payload=await helper.validationJoi(req.body,schema)
+          const{oldpassword,newpassword}=payload;
+          const id=req.user.id;
+          const user=await Models.userModel.findOne({where:{id}})
+          if(!user)
+          {
+            return res.status(404).json({message:"USER NOT FOUND!"})
+          }
+          const validpassword=await argon2.verify(
+            user.password.trim(),
+            oldpassword.trim()
+          )
+          if(!validpassword)
+          {
+            return res.status(404).json({message:"INVALID PASSWORD"})
+          }
+          const hashpassword=await argon2.hash(newpassword,
+            {
+                  type: argon2.argon2id,
+                  memoryCost: 2 ** 16,
+                  timeCost: 3,
+                 parallelism: 1,
+            }
+          )
+          const existuser=await Models.userModel.update({password:hashpassword},{where:{id}})
+          return res.status(200).json({message:"PASSWORD CHANGED SUCCESSFULLY!",existuser})
+        }
+        catch(error)
+        {
+            console.log(error)
+            return res.status(500).json({message:"ERROR",error})
+        }
+    },
+    editProfile:async(req,res) =>
+    {
+      try
+      {
+         const userId=req.user.id;
+         console.log(">>>",userId)
+          const { firstName, lastName, phoneNumber, countryCode, email,profile} = req.body;
+         const user=await Models.userModel.findOne({where:{id:userId}})
+         if(!user)
+         {
+            return res.status(404).json({message:"USER NOT FOUND!"})
+         };
+         let profilepath = user .profile; 
+           if (req.files?.profile) {
+         const file = req.files.profile;
+           profilepath = await commonhelper.fileUpload(file);
+          }
+          await Models.userModel.update({firstName,lastName,phoneNumber,countryCode,email,profile},{where:{id:userId}})
+         return res.status(200).json({message:"USER DATA UPDATED",user})
+      }
+      catch(error)
+      {
+        console.log(error)
+        return res.status(500).json({message:"ERROR"})
+      }
+    },
+    notificationCreate:async(req,res) =>
+    {
+        try
+        {
+           const schema=Joi.object({
+            senderId:Joi.string().required(),
+            receiverId:Joi.string().required(),
+            title:Joi.string().required(),
+            message:Joi.string().required(),
+            bookingId:Joi.string().required(),
+            isRead:Joi.string().optional(),
+            isnotification:Joi.string().optional()
+           })
+           const payload=await helper.validationJoi(req.body,schema)
+           const{senderId,receiverId,title,message,bookingId,isRead,isnotification}=payload;
+           const notified=await Models.notificationModel.create(
+            senderId,receiverId,title,message,bookingId,isRead,isnotification
+           )
+           return res.status(200).json({message:"Notification created!",notified})
+        }
+        catch(error)
+        {
+            console.log(error)
+            return res.status(500).json({message:"ERROR"})
+        }
+    },
+    notificationGet:async(req,res) =>
+    {
+        try
+        {
+        const{notificationId}=req.body;
+        const notification=await Models.notificationModel.findOne({where:{notificationId}})
+        if(!notification)
+        {
+            return res.status(404).json({message:"ID NOT FOUND!"})
+        }
+        return res.status(200).json({message:"NOTIFICATION GET"})
+        }
+        catch(error)
+        {
+            console.log(error)
+            return res.status(500).json({message:"ERROR"})
+        }
+    },
+    editNotification:async(req,res) =>
+    {
+        try
+        {
+           const{notificationId,senderId,receiverId,title,message,bookingId,isRead,isnotification}=req.body;
+           const user=await Models.notificationModel.findOne({where:{notificationId}})
+           if(!user)
+           {
+             return res.status(404).json({message:"USER NOT FOUND!"})
+           }
+           await Models.notificationModel.update({senderId,receiverId,title,message,bookingId,isRead,isnotification},
+            {where:{notificationId}}
+           )
+           return res.status(200).json({message:"NOTIFICATION UPDATED!"})
+        }
+        catch(error)
+        {
+            console.log(error)
+            return res.status(500).json({message:"ERROR",error})
+        }
+    },
+    clearNotification:async(req,res) =>
+    {
+      try
+      {
+       const{notificationId}=req.body;
+       const notify=await Models.notificationModel.findOne({where:{notificationId}})
+       if(notify)
+       {
+        await Models.notificationModel.destroy({where:{notificationId}})
+       }
+       return res.status(200).json({message:"NOTIFICATION CLEAR"})
+      }
+      catch(error)
+      {
+        console.log(error)
+        return res.status(500).json({message:"ERROR",error})
+      }
+    },
+    address:async(req,res) =>
+    {
+      try
+      {
+        const userId=req.user.id
+         const schema=Joi.object({
+          country:Joi.string().required(),
+          state:Joi.string().required(),
+          city:Joi.string().required(),
+          hnumber:Joi.string().required()
+         });
+         const payload=await helper.validationJoi(req.body,schema)
+         const user=await Models.addressModel.create({
+          userId,
+          country:payload.country,
+          state:payload.state,
+          city:payload.city,
+          hnumber:payload.hnumber
+         })
+         return res.status(200).json({message:"ADDRESS ADDED!",user})
+      }
+      catch(error)
+      {
+        console.log(error)
+        return res.status(500).json()
+      }
+    },
+    editAddress:async(req,res) =>
+    {
+      try
+      {
+         const userId = req.user.id;
+        const{addressId,country,state,city,hnumber}=req.body;
+        const userexist=await Models.addressModel.findOne({where:{id:addressId,userId}})
+        if(!userexist)
+        {
+          return res.status(404).json({message:"USER NOT FOUND!"})
+        }
+        await Models.addressModel.update({country,state,city,hnumber},{where:{id:addressId,userId}})
+        return res.status(200).json({message:"DATA UPDATED!"})
+      }
+      catch(error)
+      {
+        console.log(error)
+        return res.status(500).json({message:"ERROR",error})
+      }
+    },
+    deleteAddress:async(req,res) =>
+    {
+      try
+      {
+        const userId=req.user.id;
+        const{addressId}=req.body;
+        const user=await Models.addressModel.findOne({where:{id:addressId,userId}})
+        if(!user)
+        {
+         return res.status(404).json({message:"USER NOT FOUND"})
+        }
+        await Models.addressModel.destroy({where:{id:addressId,userId}})
+        return res.status(200).json({message:"ADDRESS DELETED!",user})
+      }
+      catch(error)
+      {
+        console.log(error)
+        return res.status(500).json({message:"ERROR"})
+      }
+    },
+    cartData:async(req,res) =>
+    {
+      try
+      {
+        const schema=Joi.object({
+          productId:Joi.string().required(),
+          Amount:Joi.string().required()
+        })
+        const payload=await helper.validationJoi(req.body,schema)
+        const user=await Models.cartModel.create({
+          productId:payload.productId,
+          Amount:payload.Amount
+        })
+        return res.status(200).json({message:"YOU PRODUCT ADDED!",user})
+      }
+      catch(error)
+      {
+        console.log(error)
+        return res.status(500).json({message:"ERROR",error})
+      }
+    },
+    cartDataEdit:async(req,res) =>
+    {
+      try
+      {
+         const{productId,cartId,Amount}=req.body;
+         const cart=await Models.cartModel.findOne({where:{id:cartId,productId}})
+         if(!cart)
+         {
+          return res.status(404).json({message:"CART DATA NOT FOUND!"})
+         }
+         await Models.cartModel.update({Amount},{where:{id:cartId,productId}})
+          const updatedCart = await Models.cartModel.findOne({ where: { id: cartId } });
+         return res.status(200).json({message:"CART DATA EDIT!",updatedCart})
+      }
+      catch(error)
+      {
+        console.log(error)
+        return res.status(500).json({message:"ERROR",error})
+      }
+    },
+    cartDataDeleted:async(req,res) =>
+    {
+      try
+      {
+        const{cartId}=req.body;
+        const cart=await Models.cartModel.findOne({where:{id:cartId}})
+        if(!cart)
+        {
+          return res.status(404).json({message:"CART DATA NOT FOUND!"})
+        }
+        await Models.cartModel.destroy({where:{id:cartId}})
+        return res.status(200).json({message:"CART DATA DELETED!",cart})
+      }
+      catch(error)
+      {
+        console.log(error)
+        return res.status(500).json({message:"ERROR",error})
+      }
+    },
+    bookingCreate:async(req,res) =>
+    {
+      try
+      {
+      const schema=Joi.object({
+        userId:Joi.string().required(),
+        cartId:Joi.string().required(),
+        status:Joi.string().required()
+      })
+      const payload=await helper.validationJoi(req.body,schema)
+      const booking=await Models.bookingModel.create({
+        userId:payload.userId,
+        cartId:payload.cartId,
+        status:payload.status
+      })
+      return res.status(200).json({message:"BOOKING CREATED!"})
+    }
+    catch(error)
+    {
+      console.log(error)
+      return res.status(500).json({message:"ERROR",error})
+    }
+
+    },
+    bookingEdit:async(req,res) =>
+    {
+      try
+      {
+        const{bookingId,userId,cartId,status}=req.body;
+        const booking=await Models.bookingModel.findOne({where:{id:bookingId,userId,cartId}})
+        if(!booking)
+        {
+          return res.status(404).json({message:"BOOKING NOT FOUND!"})
+        }
+        await Models.bookingModel.update({status},{where:{id:bookingId}})
+        const updateBooking=await Models.bookingModel.findOne({where:{id:bookingId}})
+        return res.status(200).json({message:"DATA EDIT!",updateBooking})
+      }
+      catch(error)
+      {
+        console.log(error)
+        return res.status(500).json({message:"ERROR",error})
+      }
+    },
+    bookingDeleted:async(req,res) =>
+    {
+      try
+      {
+        const{bookingId}=req.body;
+        const booking=await Models.bookingModel.findOne({where:{id:bookingId}})
+        if(!booking)
+        {
+          return res.status(404).json({message:"BOOKING NOT FOUND!"})
+        }
+        await Models.bookingModel.destroy({where:{id:bookingId}})
+        return res.status(200).json({message:"DATA DELETED!",booking})
+      }
+      catch(error)
+      {
+        console.log(error)
+        return res.status(500).json({message:"ERROR",error})
+      }
+    },
+    getproduct:async(req,res) =>
+    {
+      try
+      {
+        const{productId}=req.body;
+        const product=await Models.productModel.findAll({where:{id:productId}})
+        if(!product)
+        {
+          return res.status(404).json({message:"PRODUCT NOT FOUND!"})
+        }
+        return res.status(200).json({message:"PRODUCT DATA GET!",product})
+      }
+      catch(error)
+      {
+        console.log(error)
+        return res.status(500).json({message:"ERROR",error})
+      }
+    }
+}

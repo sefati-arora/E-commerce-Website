@@ -1,0 +1,22 @@
+module.exports=(Sequelize,sequelize,DataTypes)=>
+{
+    return sequelize.define(
+        "categoryTable",
+        {
+            ...require('./core')(Sequelize,DataTypes),
+            title:
+            {
+                type:DataTypes.STRING(225),
+                allowNull:true
+            },
+            categoryImage:
+            {
+                type:DataTypes.STRING(225),
+                allowNull:true
+            }
+        },
+        {
+            tableName:"categoryTable"
+        }
+    )
+}
