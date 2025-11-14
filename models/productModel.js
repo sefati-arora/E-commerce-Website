@@ -36,7 +36,8 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
                 type:DataTypes.INTEGER,
                 allowNull:true,
                 defaultValue:0   //0 for inactive 1 for active
-            }
+            },
+            
         },
         {
             tableName:"productTable"

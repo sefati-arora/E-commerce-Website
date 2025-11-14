@@ -33,6 +33,18 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
                 },
                 onUpdate:"CASCADE",
                 onDelete:"CASCADE"
+            },
+            addressId:
+            {
+                type:Sequelize.UUID,
+                allowNull:true,
+                references:
+                {
+                    model:"addressTable",
+                    key:"id"
+                },
+                onUpdate:"CASCADE",
+                onDelete:"CASCADE"
             }
         },
         {

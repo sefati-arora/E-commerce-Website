@@ -29,20 +29,20 @@ module.exports = {
   },
   editCategory: async (req, res) => {
     try {
-      const { categoryId, title, categoryImage } = req.body;
+      const { categoryId, title } = req.body;
       const category = await Models.categoryModel.findOne({
         where: { id: categoryId },
       });
       if (!category) {
         return res.status(404).json({ message: "CATEGORY NOT FOUND!" });
       }
-      let categoryImagePath = category.categoryImage;
+      let categorypath = req.files?.categoryImage;
       if (req.files?.categoryImage) {
         const file = req.files.categoryImage;
-        categoryImagePath = await commonhelper.fileUpload(file);
+        categorypath = await commonhelper.fileUpload(file);
       }
       await Models.categoryModel.update(
-        { title, categoryImage },
+        { title, categoryImage: categorypath },
         { where: { id: categoryId } }
       );
       return res.status(200).json({ message: "DATA UPDATED!", category });
@@ -53,7 +53,7 @@ module.exports = {
   },
   deleteCategory: async (req, res) => {
     try {
-      const categoryId = req.body.categoryId.trim(); 
+      const categoryId = req.body.categoryId.trim();
       const category = await Models.categoryModel.findOne({
         where: { id: categoryId },
       });
@@ -74,16 +74,29 @@ module.exports = {
         title: Joi.string().required(),
         description: Joi.string().required(),
         price: Joi.string().required(),
-        status: Joi.number().required(),
       });
       const payload = await helper.validationJoi(req.body, schema);
+      let file = req.files?.file;
+      console.log(">>>>", file);
+      if (!file) {
+        return res.status(404).json({ message: "FILE NOT FOUND" });
+      }
+      if (!Array.isArray(file)) {
+        file = [file];
+      }
       const product = await Models.productModel.create({
         categoryId: payload.categoryId,
         title: payload.title,
         description: payload.description,
         price: payload.price,
-        status: payload.status,
       });
+      for (let i = 0; i < file.length; i++) {
+        const path = await commonhelper.fileUpload(file[i]);
+        await Models.productImage.create({
+          Images: path,
+        });
+      }
+
       return res.status(200).json({ message: "PRODUCT ADDED!", product });
     } catch (error) {
       console.log(error);
@@ -100,12 +113,25 @@ module.exports = {
       if (!product) {
         return res.status(404).json({ message: "PRODUCT NOT FOUND!" });
       }
+      let file = req.files?.file;
+      console.log(">>>>", file);
+      if (!file) {
+        return res.status(404).json({ message: "FILE NOT FOUND" });
+      }
+      if (!Array.isArray(file)) {
+        file = [file];
+      }
       await Models.productModel.update(
         { categoryId, title, description, price, status },
         {
           where: { id: productId },
-        }
-      );
+        });
+        for (let i = 0; i < file.length; i++) {
+        const path = await commonhelper.fileUpload(file[i]);
+        await Models.productImage.update({
+          Images: path,
+        },{where:{id:productId}});
+    }
       return res.status(200).json({ messagee: "PRODUCT EDIT!" });
     } catch (error) {
       console.log(error);
@@ -128,77 +154,4 @@ module.exports = {
       return res.status(500).json({ message: "ERROR", error });
     }
   },
-  productImage: async (req, res) => {
-    try {
-      const { productId } = req.body;
-      const product = await Models.productModel.findOne({
-        where: { id: productId },
-      });
-      if (!product) {
-        return res.status(404).json({ message: "PRODUCT ID NOT FOUND" });
-      }
-      let file = req.files?.file;
-      if (!file) {
-        return res.status(404).json({ message: "FILE NOT FOUND" });
-      }
-      if (!Array.isArray(file)) {
-        file = [file];
-      }
-      for (let i = 0; i < file.length; i++) {
-        const path = await commonhelper.fileUpload(file[i]);
-        await Models.productImage.create({
-          productId,
-          Images: path,
-        });
-      }
-    } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: "ERROR", error });
-    }
-  },
-  productImageEdit: async (req, res) => {
-    try {
-      const { productId, ImageId } = req.body;
-      const productImage = await Models.productImage.findOne({
-        where: { id: ImageId, productId },
-      });
-      if (!productImage) {
-        return res.status(404).json({ message: "IMAGE NOT FOUND!" });
-      }
-      let imagePath = productImage.Images;
-      if (req.file) {
-        imagePath = await commonhelper.fileUpload(req.file);
-      }
-      await Models.productImage.update(
-        { Images: imagePath },
-        { where: { id: ImageId } }
-      );
-
-      return res
-        .status(200)
-        .json({ message: "IMAGE UPDATED!", productImage });
-    } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: "ERROR", error });
-    }
-  },
-  productImageDelete:async(req,res) =>
-  {
-    try
-    { 
-      const{ImageId}=req.body;
-      const product=await Models.productImage.findOne({where:{id:ImageId}})
-      if(!product)
-      {
-        return res.status(404).json({message:"PRODUCT IMAGE NOT FOUND!"})
-      }
-      await Models.productImage.destroy({where:{id:ImageId}})
-      return res.status(200).json({message:"DATA DESTROY!",product})
-    }
-    catch(error)
-    {
-        console.log(error)
-        return res.status(500).json({message:"ERROR",error})
-    }
-  }
 };

@@ -16,7 +16,7 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
                 onUpdate:"CASCADE",
                 onDelte:"CASCADE"
             },
-            Amount:
+            Quantity:
             {
                 type:DataTypes.STRING(225),
                 allowNull:true
