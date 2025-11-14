@@ -164,47 +164,45 @@ module.exports=
             return res.status(500).json({message:"ERROR"})
         }
     },
-    changePassword:async(req,res) =>
+   changePassword:async(req,res) =>
     {
-        try
+      try
+      {
+        const schema=Joi.object({
+          oldpassword:Joi.string().required(),
+          newpassword:Joi.string().min(6).required(),
+          confirmPassword: Joi.string().valid(Joi.ref('newpassword')).required()
+         
+        })
+        const payload=await helper.validationJoi(req.body,schema)
+        const{oldpassword,newpassword}=payload;
+        const id=req.user.id;
+        const user=await Models.userModel.findOne({where:{id}})
+        if(!user)
         {
-          const schema=Joi.object({
-            oldpassword:Joi.string().required(),
-            newpassword:Joi.string().min(6).required(),
-            confirmpassword:Joi.string().valid(Joi.ref("newpassword")).required()
-          })
-          const payload=await helper.validationJoi(req.body,schema)
-          const{oldpassword,newpassword}=payload;
-          const id=req.user.id;
-          const user=await Models.userModel.findOne({where:{id}})
-          if(!user)
-          {
-            return res.status(404).json({message:"USER NOT FOUND!"})
-          }
-          const validpassword=await argon2.verify(
-            user.password.trim(),
-            oldpassword.trim()
-          )
-          if(!validpassword)
-          {
-            return res.status(404).json({message:"INVALID PASSWORD"})
-          }
-          const hashpassword=await argon2.hash(newpassword,
-            {
-                  type: argon2.argon2id,
-                  memoryCost: 2 ** 16,
-                  timeCost: 3,
-                 parallelism: 1,
-            }
-          )
-          const existuser=await Models.userModel.update({password:hashpassword},{where:{id}})
-          return res.status(200).json({message:"PASSWORD CHANGED SUCCESSFULLY!",existuser})
+          return res.status(404).json({message:"USER NOT FOUND!"})
         }
-        catch(error)
+        console.log('hash',user.password)
+        console.log(">>>>",oldpassword)
+        const validpassword=await argon2.verify(user.password,oldpassword.trim())
+        if(!validpassword)
         {
-            console.log(error)
-            return res.status(500).json({message:"ERROR",error})
+          return res.status(404).json({message:"INVALID PASSWORD"})
         }
+        const hashedPassword = await argon2.hash(newpassword, {
+      type: argon2.argon2id,
+      memoryCost: 2 ** 16,
+      timeCost: 3,
+      parallelism: 1,
+       });
+       const existuser=await Models.userModel.update({password:hashedPassword},{where:{id:id}})
+       return res.status(200).json({message:"PASSWORD CHANGED!",existuser})
+      }
+      catch(error)
+      {
+        console.log(error);
+        return res.status(500).json({message:"ERROR"})
+      }
     },
     editProfile:async(req,res) =>
     {
@@ -262,8 +260,8 @@ module.exports=
     {
         try
         {
-        const{notificationId}=req.body;
-        const notification=await Models.notificationModel.findOne({where:{notificationId}})
+        const {notificationId }=req.body;
+        const notification=await Models.notificationModel.findOne({where:{id:notificationId}})
         if(!notification)
         {
             return res.status(404).json({message:"ID NOT FOUND!"})
@@ -281,13 +279,13 @@ module.exports=
         try
         {
            const{notificationId,senderId,receiverId,title,message,bookingId,isRead,isnotification}=req.body;
-           const user=await Models.notificationModel.findOne({where:{notificationId}})
+           const user=await Models.notificationModel.findOne({where:{id:notificationId}})
            if(!user)
            {
              return res.status(404).json({message:"USER NOT FOUND!"})
            }
            await Models.notificationModel.update({senderId,receiverId,title,message,bookingId,isRead,isnotification},
-            {where:{notificationId}}
+            {where:{id:notificationId}}
            )
            return res.status(200).json({message:"NOTIFICATION UPDATED!"})
         }
@@ -319,7 +317,7 @@ module.exports=
     {
       try
       {
-        const userId=req.user.id
+        const userId = req.user.id.trim(); 
          const schema=Joi.object({
           country:Joi.string().required(),
           state:Joi.string().required(),
@@ -327,6 +325,11 @@ module.exports=
           hnumber:Joi.string().required()
          });
          const payload=await helper.validationJoi(req.body,schema)
+         const users = await Models.userModel.findOne({ where: { id: userId } });
+       if (!users) {
+      return res.status(404).json({ message: "USER NOT FOUND" });
+    }
+
          const user=await Models.addressModel.create({
           userId,
           country:payload.country,
@@ -334,12 +337,12 @@ module.exports=
           city:payload.city,
           hnumber:payload.hnumber
          })
-         return res.status(200).json({message:"ADDRESS ADDED!",user})
+         return res.status(200).json({message:"ADDRESS ADDED!",user,users})
       }
       catch(error)
       {
         console.log(error)
-        return res.status(500).json()
+        return res.status(500).json({message:"ERROR",error})
       }
     },
     editAddress:async(req,res) =>
@@ -407,14 +410,15 @@ module.exports=
     {
       try
       {
-         const{productId,cartId,Amount}=req.body;
-         const cart=await Models.cartModel.findOne({where:{id:cartId,productId}})
+        const cartId = req.body.cartId.toString().trim();
+         const{Amount}=req.body;
+         const cart=await Models.cartModel.findOne({where:{id:cartId}})
          if(!cart)
          {
           return res.status(404).json({message:"CART DATA NOT FOUND!"})
          }
-         await Models.cartModel.update({Amount},{where:{id:cartId,productId}})
-          const updatedCart = await Models.cartModel.findOne({ where: { id: cartId } });
+         await Models.cartModel.update({Amount},{where:{id:cartId}})
+          const updatedCart = await Models.cartModel.findOne({ where:{id:cartId } });
          return res.status(200).json({message:"CART DATA EDIT!",updatedCart})
       }
       catch(error)
@@ -457,7 +461,7 @@ module.exports=
         cartId:payload.cartId,
         status:payload.status
       })
-      return res.status(200).json({message:"BOOKING CREATED!"})
+      return res.status(200).json({message:"BOOKING CREATED!",booking})
     }
     catch(error)
     {
@@ -470,8 +474,9 @@ module.exports=
     {
       try
       {
-        const{bookingId,userId,cartId,status}=req.body;
-        const booking=await Models.bookingModel.findOne({where:{id:bookingId,userId,cartId}})
+        const bookingId = req.body.bookingId.toString().trim();
+        const{userId,cartId,status}=req.body;
+        const booking=await Models.bookingModel.findOne({where:{id:bookingId}})
         if(!booking)
         {
           return res.status(404).json({message:"BOOKING NOT FOUND!"})
@@ -509,8 +514,12 @@ module.exports=
     {
       try
       {
-        const{productId}=req.body;
-        const product=await Models.productModel.findAll({where:{id:productId}})
+        const {productId}=req.body;
+        if(!productId)
+        {
+          return res.status(404).json({message:"ID NOT FOUND!"})
+        }
+        const product=await Models.productModel.findOne({where:{id:productId}})
         if(!product)
         {
           return res.status(404).json({message:"PRODUCT NOT FOUND!"})

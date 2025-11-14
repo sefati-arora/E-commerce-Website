@@ -11,9 +11,9 @@ module.exports = {
         title: Joi.string().required(),
       });
       const payload = await helper.validationJoi(req.body, schema);
-      const file = req.files?.profile;
+      const file = req.files?.categoryImage;
       if (!file) {
-        return res.status(400).json({ message: "Profile image is required" });
+        return res.status(400).json({ message: "Category image is required" });
       }
 
       const path = await commonhelper.fileUpload(file);
@@ -53,7 +53,7 @@ module.exports = {
   },
   deleteCategory: async (req, res) => {
     try {
-      const { categoryId } = req.body;
+      const categoryId = req.body.categoryId.trim(); 
       const category = await Models.categoryModel.findOne({
         where: { id: categoryId },
       });
@@ -176,7 +176,7 @@ module.exports = {
 
       return res
         .status(200)
-        .json({ message: "IMAGE UPDATED!", image: updatedImage });
+        .json({ message: "IMAGE UPDATED!", productImage });
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: "ERROR", error });
@@ -186,13 +186,13 @@ module.exports = {
   {
     try
     { 
-      const{productId,ImageId}=req.body;
-      const product=await Models.productImage.findOne({where:{productId,ImageId}})
+      const{ImageId}=req.body;
+      const product=await Models.productImage.findOne({where:{id:ImageId}})
       if(!product)
       {
         return res.status(404).json({message:"PRODUCT IMAGE NOT FOUND!"})
       }
-      await Models.productImage.destroy({where:{id:productId,ImageId}})
+      await Models.productImage.destroy({where:{id:ImageId}})
       return res.status(200).json({message:"DATA DESTROY!",product})
     }
     catch(error)
