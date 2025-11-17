@@ -3,6 +3,7 @@ const userController=require('../controller/userController')
 const adminController=require('../controller/adminController')
 const {authentication}=require('../middleware/authentication')
 const router=express.Router();
+router.post('/sidIdGenerateTwilio',userController.sidIdGenerateTwilio)
 router.post('/signUp',userController.signUp)
 router.post('/login',userController.login)
 router.post('/logOut',authentication,userController.logOut)
@@ -30,4 +31,7 @@ router.post('/subscriptionCreate',authentication,userController.subscriptionCrea
 router.post('/subscriptionBuy',authentication,userController.subscriptionBuy)
 router.post('/subscriptionEdit',authentication,userController.subscriptionEdit)
 router.post('/subscriptionDelete',authentication,userController.subscriptionDelete)
+router.post('/AddCartItem',authentication,userController.AddCartItem)
+router.post('/UpdateCart',authentication,userController.UpdateCart)
+router.post('/DeleteCart',authentication,userController.DeleteCart)
 module.exports=router

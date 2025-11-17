@@ -5,11 +5,16 @@ const jwt = require("jsonwebtoken");
 const helper = require("../helper/validation");
 const commonhelper = require("../helper/commonHelper");
 const argon2 = require("argon2");
+const { QueryError } = require("sequelize");
 const otpManager = require("node-twillo-otp-manager")(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN,
   process.env.TWILIO_SERVICE_SID
 );
+Models.cartManageModel.hasMany(Models.cartModel, { foreignKey: "cartId" });
+Models.cartModel.belongsTo(Models.cartManageModel, { foreignKey: "cartId" });
+Models.cartModel.belongsTo(Models.productModel, { foreignKey: "productId" });
+Models.productModel.hasMany(Models.cartModel, { foreignKey: "productId" });
 module.exports = {
   sidIdGenerateTwilio: async (req, res) => {
     try {
@@ -302,12 +307,14 @@ module.exports = {
     try {
       const schema = Joi.object({
         productId: Joi.string().required(),
-        Quantity: Joi.string().required(),
+        Quantity: Joi.number().required(),
+      
       });
       const payload = await helper.validationJoi(req.body, schema);
       const user = await Models.cartModel.create({
         productId: payload.productId,
         Quantity: payload.Quantity,
+       
       });
       return res.status(200).json({ message: "YOU PRODUCT ADDED!", user });
     } catch (error) {
@@ -525,5 +532,106 @@ module.exports = {
       console.log(error)
       return res.status(500).json({message:"ERROR",error})
     }
+  },
+   AddCartItem:async(req,res) =>
+   {
+    try
+    {
+       const userId=req.user.id;
+       const{productId,Quantity}=req.body;
+       if(!productId||!Quantity)
+       {
+        return res.status(404).json({message:"prodctId and quantity not found!"})
+       }
+       const user=await Models.cartManageModel.findOne({where:{userId}})
+       if(!user)
+       {
+        user= await Models.cartManageModel.create(
+          {
+            userId
+          }
+        )
+       }
+         const existuser=await Models.cartModel.findOne({where:{cartId:user.id,productId}})
+         if(existuser)
+         {
+          existuser.Quantity += Number(Quantity);
+          await existuser.save()
+         }
+         else
+         {
+          await Models.cartModel.create({
+            cartId:user.id,
+            productId,
+            Quantity
+          })
+         }
+         const cartData = await Models.cartManageModel.findOne({
+        where: {id:user.id},
+        include: [
+          {
+            model: Models.cartModel,
+            include: [
+              {
+                model: Models.productModel,
+              },
+            ],
+          },
+        ],
+      });
+       return res.status(200).json({message:"CART CREATED",existuser,cartData})
+    }
+    catch(error)
+    {
+      console.log(error)
+      return res.status(500).json({message:"ERROR",error})
+    }
+   },
+ UpdateCart: async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { cartItemId, Quantity } = req.body;
+    const userCart = await Models.cartManageModel.findOne({ where: { userId } });
+    if (!userCart) {
+      return res.status(404).json({ message: "USER NOT FOUND!" });
+    }
+    const cartItem = await Models.cartModel.findOne({ 
+      where: { cartId: userCart.id, id: cartItemId } 
+    });
+    if (!cartItem) {
+      return res.status(404).json({ message: "CART ITEM NOT FOUND!" });
+    }
+    const updatedRows = await Models.cartModel.update(
+      { Quantity },
+      { where: { cartId: userCart.id, id:cartItemId } }
+    );
+    return res.status(200).json({ message: "CART UPDATED!", updatedRows });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "ERROR", error });
   }
+},
+
+   DeleteCart:async(req,res)=>
+   {
+    try
+    {
+      const{cartItemId}=req.body;
+      let cart=await Models.cartModel.findOne({where:{id:cartItemId}})
+      if(cart)
+      {
+        cart=await Models.cartModel.destroy({where:{id:cartItemId}})
+      }
+      else
+      {
+        return res.status(404).json({message:"CART ITEM NOT FOUND!"})
+      }
+      return res.status(200).json({message:"DATA DELETED!",cart})
+    }
+    catch(error)
+    {
+      console.log(error)
+      return res.status(500).json({message:"ERROR",error})
+    }
+   }
 };

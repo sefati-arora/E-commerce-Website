@@ -1,0 +1,46 @@
+module.exports=(Sequelize,sequelize,DataTypes) =>
+{
+  return sequelize.define(
+    "orderItemTable",
+    {
+        ...require('./core')(Sequelize,DataTypes),
+        orderId:
+        {
+            type:Sequelize.UUID,
+            allowNull:true,
+            references:
+            {
+                model:"orderTable",
+                key:"id"
+            },
+            onUpdate:"CASCADE",
+            onDelete:"CASCADE"
+        },
+        productId:
+        {
+            type:Sequelize.UUID,
+            allowNull:true,
+            references:
+            {
+                model:"productTable",
+                key:"id"
+            },
+            onUpdate:"CASCADE",
+            onDelete:"CASCADE"
+        },
+        price:
+        {
+            type:DataTypes.DOUBLE,
+            allowNull:true
+        },
+        Quantity:
+        {
+            type:DataTypes.INTEGER,
+            allowNull:true
+        }
+    },
+    {
+        tableName:"orderItemTable"
+    }
+  )
+}

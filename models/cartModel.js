@@ -18,9 +18,20 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
             },
             Quantity:
             {
-                type:DataTypes.STRING(225),
-                allowNull:true
-            }
+                type:DataTypes.INTEGER,
+                allowNull:true,
+                defaultValue: 1,
+            },
+            cartId: {
+             type: Sequelize.UUID,
+             allowNull: true,
+            references: {
+              model: "cartManageTable",
+              key: "id",
+              },
+            onUpdate: "CASCADE",
+             onDelete: "CASCADE",
+           },
         },
         {
             tableName:"cartTable"
