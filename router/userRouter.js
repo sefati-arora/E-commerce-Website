@@ -26,4 +26,8 @@ router.post('/bookingCreate',authentication,userController.bookingCreate)
 router.post('/bookingDeleted',authentication,userController.bookingDeleted)
 router.get('/getproduct',authentication,userController.getproduct)
 router.post('/addressDefault',authentication,userController.addressDefault)
+router.post('/subscriptionCreate',authentication,userController.subscriptionCreate)
+router.post('/subscriptionBuy',authentication,userController.subscriptionBuy)
+router.post('/subscriptionEdit',authentication,userController.subscriptionEdit)
+router.post('/subscriptionDelete',authentication,userController.subscriptionDelete)
 module.exports=router

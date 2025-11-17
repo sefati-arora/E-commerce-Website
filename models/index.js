@@ -12,5 +12,7 @@ module.exports=
      addressModel:require('./addressModel')(Sequelize,sequelize,Sequelize.DataTypes),
      notificationModel:require('./notificationModel')(Sequelize,sequelize,Sequelize.DataTypes),
      transationModel:require('./transationModel')(Sequelize,sequelize,Sequelize.DataTypes),
-     bookingSlot:require('./bookingSlot')(Sequelize,sequelize,Sequelize.DataTypes)
+     bookingSlot:require('./bookingSlot')(Sequelize,sequelize,Sequelize.DataTypes),
+     subscriptionModel:require('./subscriptionModel')(Sequelize,sequelize,Sequelize.DataTypes),
+     subscriptionBuyModel:require('./subscriptionBuyModel')(Sequelize,sequelize,Sequelize.DataTypes)
 }

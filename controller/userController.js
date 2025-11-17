@@ -307,7 +307,7 @@ module.exports = {
       const payload = await helper.validationJoi(req.body, schema);
       const user = await Models.cartModel.create({
         productId: payload.productId,
-        Quantity: payload.Amount,
+        Quantity: payload.Quantity,
       });
       return res.status(200).json({ message: "YOU PRODUCT ADDED!", user });
     } catch (error) {
@@ -423,4 +423,107 @@ module.exports = {
       return res.status(500).json({ message: "ERROR" });
     }
   },
+  subscriptionCreate:async(req,res) =>
+  {
+    try
+    {
+       const schema=Joi.object({
+        title:Joi.string().required(),
+        subscriptionType:Joi.string().required(),
+        Amount:Joi.string().required(),
+        description:Joi.string().required()
+       });
+       const payload=await helper.validationJoi(req.body,schema)
+       const{title,subscriptionType,Amount,description}=payload;
+       const user=await Models.subscriptionModel.create({
+        title,
+        subscriptionType,
+        Amount,
+        description
+       })
+       return res.status(200).json({message:"SUBSCRIPTION CREATED!",user})
+    }
+    catch(error)
+    {
+       console.log(error)
+       return res.status(500).json({message:"error",error})
+    }
+  },
+  subscriptionEdit:async(req,res) =>
+  {
+   try
+   {
+     const{subscriptionId,title,subscriptionType,Amount,description}=req.body;
+     const sub=await Models.subscriptionModel.findOne({where:{id:subscriptionId}})
+     if(!sub)
+     {
+      return res.status(404).json({message:"SUBSCRIPTION NOT FOUND!"})
+     }
+     await Models.subscriptionModel.update({title,subscriptionType,Amount,description},{where:{id:subscriptionId}})
+     return res.status(200).json({message:"SUBSCRIPTION UPDATED!"})
+   }
+   catch(error)
+   {
+    console.log(error)
+    return res.status(500).json({message:"ERROR",error})
+   }
+  },
+  subscriptionDelete:async(req,res)=>
+  {
+     try
+     {
+       const{subscriptionId}=req.body;
+       const sub=await Models.subscriptionModel.findOne({where:{id:subscriptionId}})
+       if(!sub)
+       {
+          return res.status(404).json({message:"SUBSCRIPTION NOT FOUND!"})
+       }
+       await Models.subscriptionModel.destroy({where:{id:subscriptionId}})
+       return res.status(200).json({message:"SUBSCRIPTION ID DELETED!"})
+     }
+     catch(error)
+     {
+      console.log(error)
+      return res.status(500).json({message:"ERROR",error})
+     }
+  },
+  subscriptionBuy:async(req,res) =>
+  {
+    try
+    {
+       const userId=req.user.id;
+       const{subscriptionId}=req.body;
+       const subscriptionBuy=await Models.subscriptionModel.findOne({where:{id:subscriptionId}})
+       if(!subscriptionBuy)
+       {
+        return res.status(404).json({message:"SUBSCRIPTION NOT FOUND!"})
+       }
+       const startDate=new Date();
+       const EndDate=new Date(startDate);
+       if(subscriptionBuy.subscriptionType==0)
+       {
+         EndDate.setMonth(EndDate.getMonth()+1)
+       }
+       else if(subscriptionBuy.subscriptionType==1)
+       {
+        EndDate.setFullYear(EndDate.getFullYear()+1)
+       }
+       else
+       {
+        return res.status(404).json({message:"ERROR INVALID SUBSCRIPTION!"})
+       }
+       const sub=await Models.subscriptionBuyModel.create({
+        userId,
+        subscriptionId,
+        startDate:startDate,
+        EndDate:EndDate
+       })
+       return res.status(200).json({message:"SUBSCRIPTION BUY",sub})
+    }
+    catch(error)
+    {
+      console.log(error)
+      return res.status(500).json({message:"ERROR",error})
+    }
+  }
 };
