@@ -44,7 +44,22 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
          type:DataTypes.STRING(225),
          allowNull:true,
          defaultValue:null
-        }    
+        } ,
+        role:
+        {
+         type:DataTypes.INTEGER,
+         defaultValue:1
+        },
+        isOnline:
+        {
+         type:DataTypes.INTEGER,
+         defaultValue:0   //0 for offline   1 for online
+        },
+        isorderassign:
+        {
+         type:DataTypes.INTEGER,
+         defaultValue:0    //0 for assign  1 for not assign
+        }
  },
  {
     tableName:"userTable"

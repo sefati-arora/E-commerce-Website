@@ -37,4 +37,6 @@ router.post('/DeleteCart',authentication,userController.DeleteCart)
 router.post('/checkout',authentication,userController.checkout)
 router.post('/orderList',authentication,userController.orderList)
 router.post('/orderDetails',authentication,userController.orderDetails)
+router.post('/orderAssign',authentication,userController.orderAssign)
+router.post('/driverlist',authentication,userController.driverlist)
 module.exports=router

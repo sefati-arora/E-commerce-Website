@@ -14,8 +14,8 @@ Models.cartManageModel.hasMany(Models.cartModel, { foreignKey: "cartId" });
 Models.cartModel.belongsTo(Models.cartManageModel, { foreignKey: "cartId" });
 Models.cartModel.belongsTo(Models.productModel, { foreignKey: "productId" });
 Models.productModel.hasMany(Models.cartModel, { foreignKey: "productId" });
-Models.orderItemModel.belongsTo(Models.orderModel,{foreignKey:"orderId"});
-Models.orderModel.hasMany(Models.orderItemModel,{foreignKey:"orderId"})
+Models.orderItemModel.belongsTo(Models.orderModel, { foreignKey: "orderId" });
+Models.orderModel.hasMany(Models.orderItemModel, { foreignKey: "orderId" });
 module.exports = {
   sidIdGenerateTwilio: async (req, res) => {
     try {
@@ -37,6 +37,7 @@ module.exports = {
         email: Joi.string().required(),
         password: Joi.string().required(),
         devicetoken: Joi.string().required(),
+        role: Joi.string().required(),
       });
       const payload = await helper.validationJoi(req.body, schema);
       const {
@@ -47,6 +48,7 @@ module.exports = {
         email,
         password,
         devicetoken,
+        role,
       } = payload;
       const hashpassword = await argon2.hash(password);
       const file = req.files?.profile;
@@ -65,13 +67,14 @@ module.exports = {
         password: hashpassword,
         devicetoken,
         profile: path,
+        role,
       });
-      //    if (user) {
-      //   const phone = payload.countryCode + payload.phoneNumber;
-      //   let response = await otpManager.sendOTP(phone);
-      //   console.log(`✅ OTP sent successfully to ${payload.phoneNumber}`);
-      //   console.log(response);
-      // }
+      if (user) {
+        const phone = payload.countryCode + payload.phoneNumber;
+        let response = await otpManager.sendOTP(phone);
+        console.log(`✅ OTP sent successfully to ${payload.phoneNumber}`);
+        console.log(response);
+      }
       const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY);
       return res.status(200).json({ message: "USER CREATED!", user, token });
     } catch (error) {
@@ -203,7 +206,7 @@ module.exports = {
     try {
       const userId = req.user.id;
       console.log(">>>", userId);
-      const { firstName, lastName, phoneNumber, countryCode, email, profile } =
+      const { firstName, lastName, phoneNumber, countryCode, email, profile,role,isOnline,isorderassign } =
         req.body;
       const user = await Models.userModel.findOne({ where: { id: userId } });
       if (!user) {
@@ -215,7 +218,7 @@ module.exports = {
         profilepath = await commonhelper.fileUpload(file);
       }
       await Models.userModel.update(
-        { firstName, lastName, phoneNumber, countryCode, email, profile },
+        { firstName, lastName, phoneNumber, countryCode, email, profile,role,isOnline,isorderassign },
         { where: { id: userId } }
       );
       return res.status(200).json({ message: "USER DATA UPDATED", user });
@@ -309,13 +312,11 @@ module.exports = {
       const schema = Joi.object({
         productId: Joi.string().required(),
         Quantity: Joi.number().required(),
-      
       });
       const payload = await helper.validationJoi(req.body, schema);
       const user = await Models.cartModel.create({
         productId: payload.productId,
         Quantity: payload.Quantity,
-       
       });
       return res.status(200).json({ message: "YOU PRODUCT ADDED!", user });
     } catch (error) {
@@ -326,11 +327,11 @@ module.exports = {
   cartDataDeleted: async (req, res) => {
     try {
       const { cartId } = req.body;
-      const cart = await Models.cartModel.findOne({ where: { id: cartId } });
+      const cart = await Models.cartModel.findOne({ where: { id:cartId } });
       if (!cart) {
         return res.status(404).json({ message: "CART DATA NOT FOUND!" });
       }
-      await Models.cartModel.destroy({ where: { id: cartId } });
+      await Models.cartModel.destroy({ where: { id:cartId } });
       return res.status(200).json({ message: "CART DATA DELETED!", cart });
     } catch (error) {
       console.log(error);
@@ -339,7 +340,7 @@ module.exports = {
   },
   bookingCreate: async (req, res) => {
     try {
-      const userId =req.user.id
+      const userId = req.user.id;
       const schema = Joi.object({
         cartId: Joi.string().required(),
         addressId: Joi.string().required(),
@@ -348,7 +349,7 @@ module.exports = {
       });
       const payload = await helper.validationJoi(req.body, schema);
       const defaultAddress = await Models.addressModel.findOne({
-        where: { id: payload.addressId, userId:userId, isDefault: 1 },
+        where: { id: payload.addressId, userId: userId, isDefault: 1 },
       });
 
       if (!defaultAddress) {
@@ -431,144 +432,125 @@ module.exports = {
       return res.status(500).json({ message: "ERROR" });
     }
   },
-  subscriptionCreate:async(req,res) =>
-  {
-    try
-    {
-       const schema=Joi.object({
-        title:Joi.string().required(),
-        subscriptionType:Joi.string().required(),
-        Amount:Joi.string().required(),
-        description:Joi.string().required()
-       });
-       const payload=await helper.validationJoi(req.body,schema)
-       const{title,subscriptionType,Amount,description}=payload;
-       const user=await Models.subscriptionModel.create({
+  subscriptionCreate: async (req, res) => {
+    try {
+      const schema = Joi.object({
+        title: Joi.string().required(),
+        subscriptionType: Joi.string().required(),
+        Amount: Joi.string().required(),
+        description: Joi.string().required(),
+      });
+      const payload = await helper.validationJoi(req.body, schema);
+      const { title, subscriptionType, Amount, description } = payload;
+      const user = await Models.subscriptionModel.create({
         title,
         subscriptionType,
         Amount,
-        description
-       })
-       return res.status(200).json({message:"SUBSCRIPTION CREATED!",user})
-    }
-    catch(error)
-    {
-       console.log(error)
-       return res.status(500).json({message:"error",error})
+        description,
+      });
+      return res.status(200).json({ message: "SUBSCRIPTION CREATED!", user });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "error", error });
     }
   },
-  subscriptionEdit:async(req,res) =>
-  {
-   try
-   {
-     const{subscriptionId,title,subscriptionType,Amount,description}=req.body;
-     const sub=await Models.subscriptionModel.findOne({where:{id:subscriptionId}})
-     if(!sub)
-     {
-      return res.status(404).json({message:"SUBSCRIPTION NOT FOUND!"})
-     }
-     await Models.subscriptionModel.update({title,subscriptionType,Amount,description},{where:{id:subscriptionId}})
-     return res.status(200).json({message:"SUBSCRIPTION UPDATED!"})
-   }
-   catch(error)
-   {
-    console.log(error)
-    return res.status(500).json({message:"ERROR",error})
-   }
+  subscriptionEdit: async (req, res) => {
+    try {
+      const { subscriptionId, title, subscriptionType, Amount, description } =
+        req.body;
+      const sub = await Models.subscriptionModel.findOne({
+        where: { id: subscriptionId },
+      });
+      if (!sub) {
+        return res.status(404).json({ message: "SUBSCRIPTION NOT FOUND!" });
+      }
+      await Models.subscriptionModel.update(
+        { title, subscriptionType, Amount, description },
+        { where: { id: subscriptionId } }
+      );
+      return res.status(200).json({ message: "SUBSCRIPTION UPDATED!" });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
+    }
   },
-  subscriptionDelete:async(req,res)=>
-  {
-     try
-     {
-       const{subscriptionId}=req.body;
-       const sub=await Models.subscriptionModel.findOne({where:{id:subscriptionId}})
-       if(!sub)
-       {
-          return res.status(404).json({message:"SUBSCRIPTION NOT FOUND!"})
-       }
-       await Models.subscriptionModel.destroy({where:{id:subscriptionId}})
-       return res.status(200).json({message:"SUBSCRIPTION ID DELETED!"})
-     }
-     catch(error)
-     {
-      console.log(error)
-      return res.status(500).json({message:"ERROR",error})
-     }
+  subscriptionDelete: async (req, res) => {
+    try {
+      const { subscriptionId } = req.body;
+      const sub = await Models.subscriptionModel.findOne({
+        where: { id: subscriptionId },
+      });
+      if (!sub) {
+        return res.status(404).json({ message: "SUBSCRIPTION NOT FOUND!" });
+      }
+      await Models.subscriptionModel.destroy({ where: { id: subscriptionId } });
+      return res.status(200).json({ message: "SUBSCRIPTION ID DELETED!" });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
+    }
   },
-  subscriptionBuy:async(req,res) =>
-  {
-    try
-    {
-       const userId=req.user.id;
-       const{subscriptionId}=req.body;
-       const subscriptionBuy=await Models.subscriptionModel.findOne({where:{id:subscriptionId}})
-       if(!subscriptionBuy)
-       {
-        return res.status(404).json({message:"SUBSCRIPTION NOT FOUND!"})
-       }
-       const startDate=new Date();
-       const EndDate=new Date(startDate);
-       if(subscriptionBuy.subscriptionType==0)
-       {
-         EndDate.setMonth(EndDate.getMonth()+1)
-       }
-       else if(subscriptionBuy.subscriptionType==1)
-       {
-        EndDate.setFullYear(EndDate.getFullYear()+1)
-       }
-       else
-       {
-        return res.status(404).json({message:"ERROR INVALID SUBSCRIPTION!"})
-       }
-       const sub=await Models.subscriptionBuyModel.create({
+  subscriptionBuy: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { subscriptionId } = req.body;
+      const subscriptionBuy = await Models.subscriptionModel.findOne({
+        where: { id: subscriptionId },
+      });
+      if (!subscriptionBuy) {
+        return res.status(404).json({ message: "SUBSCRIPTION NOT FOUND!" });
+      }
+      const startDate = new Date();
+      const EndDate = new Date(startDate);
+      if (subscriptionBuy.subscriptionType == 0) {
+        EndDate.setMonth(EndDate.getMonth() + 1);
+      } else if (subscriptionBuy.subscriptionType == 1) {
+        EndDate.setFullYear(EndDate.getFullYear() + 1);
+      } else {
+        return res.status(404).json({ message: "ERROR INVALID SUBSCRIPTION!" });
+      }
+      const sub = await Models.subscriptionBuyModel.create({
         userId,
         subscriptionId,
-        startDate:startDate,
-        EndDate:EndDate
-       })
-       return res.status(200).json({message:"SUBSCRIPTION BUY",sub})
-    }
-    catch(error)
-    {
-      console.log(error)
-      return res.status(500).json({message:"ERROR",error})
+        startDate: startDate,
+        EndDate: EndDate,
+      });
+      return res.status(200).json({ message: "SUBSCRIPTION BUY", sub });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
     }
   },
-   AddCartItem:async(req,res) =>
-   {
-    try
-    {
-       const userId=req.user.id;
-       const{productId,Quantity}=req.body;
-       if(!productId||!Quantity)
-       {
-        return res.status(404).json({message:"prodctId and quantity not found!"})
-       }
-       let user=await Models.cartManageModel.findOne({where:{userId}})
-       if(!user)
-       {
-        user= await Models.cartManageModel.create(
-          {
-            userId
-          }
-        )
-       }
-         const existuser=await Models.cartModel.findOne({where:{cartId:user.id,productId}})
-         if(existuser)
-         {
-          existuser.Quantity += Number(Quantity);
-          await existuser.save()
-         }
-         else
-         {
-          await Models.cartModel.create({
-            cartId:user.id,
-            productId,
-            Quantity
-          })
-         }
-         const cartData = await Models.cartManageModel.findOne({
-        where: {id:user.id},
+  AddCartItem: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { productId, Quantity } = req.body;
+      if (!productId || !Quantity) {
+        return res
+          .status(404)
+          .json({ message: "prodctId and quantity not found!" });
+      }
+      let user = await Models.cartManageModel.findOne({ where: { userId } });
+      if (!user) {
+        user = await Models.cartManageModel.create({
+          userId,
+        });
+      }
+      const existuser = await Models.cartModel.findOne({
+        where: { cartId: user.id, productId },
+      });
+      if (existuser) {
+        existuser.Quantity += Number(Quantity);
+        await existuser.save();
+      } else {
+        await Models.cartModel.create({
+          cartId: user.id,
+          productId,
+          Quantity,
+        });
+      }
+      const cartData = await Models.cartManageModel.findOne({
+        where: { id: user.id },
         include: [
           {
             model: Models.cartModel,
@@ -580,157 +562,206 @@ module.exports = {
           },
         ],
       });
-       return res.status(200).json({message:"CART CREATED",existuser,cartData})
+      return res
+        .status(200)
+        .json({ message: "CART CREATED", existuser, cartData });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
     }
-    catch(error)
-    {
-      console.log(error)
-      return res.status(500).json({message:"ERROR",error})
+  },
+  UpdateCart: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { cartItemId, Quantity } = req.body;
+      const userCart = await Models.cartManageModel.findOne({
+        where: { userId },
+      });
+      if (!userCart) {
+        return res.status(404).json({ message: "USER NOT FOUND!" });
+      }
+      const cartItem = await Models.cartModel.findOne({
+        where: { cartId: userCart.id, id: cartItemId },
+      });
+      if (!cartItem) {
+        return res.status(404).json({ message: "CART ITEM NOT FOUND!" });
+      }
+      const updatedRows = await Models.cartModel.update(
+        { Quantity },
+        { where: { cartId: userCart.id, id: cartItemId } }
+      );
+      return res.status(200).json({ message: "CART UPDATED!", updatedRows });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "ERROR", error });
     }
-   },
- UpdateCart: async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { cartItemId, Quantity } = req.body;
-    const userCart = await Models.cartManageModel.findOne({ where: { userId } });
-    if (!userCart) {
-      return res.status(404).json({ message: "USER NOT FOUND!" });
+  },
+  DeleteCart: async (req, res) => {
+    try {
+      const { cartItemId } = req.body;
+      let cart = await Models.cartModel.findOne({ where: { id: cartItemId } });
+      if (cart) {
+        cart = await Models.cartModel.destroy({ where: { id: cartItemId } });
+      } else {
+        return res.status(404).json({ message: "CART ITEM NOT FOUND!" });
+      }
+      return res.status(200).json({ message: "DATA DELETED!", cart });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
     }
-    const cartItem = await Models.cartModel.findOne({ 
-      where: { cartId: userCart.id, id: cartItemId } 
-    });
-    if (!cartItem) {
-      return res.status(404).json({ message: "CART ITEM NOT FOUND!" });
+  },
+  checkout: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { addressId } = req.body;
+
+      if (!addressId)
+        return res.status(404).json({ message: "ADDRESS REQUIRED!" });
+
+      const address = await Models.addressModel.findOne({
+        where: { id: addressId, userId },
+      });
+      if (!address) return res.status(404).json({ message: "Invalid data!" });
+
+      const cart = await Models.cartManageModel.findOne({
+        where: { userId },
+        include: [
+          {
+            model: Models.cartModel,
+            include: [Models.productModel], // each cart item will have productModel
+          },
+        ],
+      });
+
+      console.log("======", cart);
+
+      if (!cart || cart.cartTables.length === 0)
+        // <-- use cartTabless
+        return res.status(404).json({ message: "Cart is empty" });
+      // Calculate total
+      let total = 0;
+      cart.cartTables.forEach((item) => {
+        total += item.Quantity * item.productTable.price;
+      });
+      // Create order
+      const order = await Models.orderModel.create({
+        userId,
+        addressId,
+        Amount: total,
+        status: 0,
+      });
+
+      // Create order items
+      for (let items of cart.cartTables) {
+        await Models.orderItemModel.create({
+          orderId: order.id,
+          userId,
+          addressId,
+          productId: items.productId,
+          Quantity: items.Quantity,
+          price: items.productTable.price,
+        });
+      }
+
+      // Clear cart items
+      // await Models.cartModel.destroy({ where: { cartId: cart.id } });
+
+      return res
+        .status(200)
+        .json({
+          message: "Order placed successfully",
+          orderId: order.id,
+          totalAmount: total,
+          cart,
+        });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
     }
-    const updatedRows = await Models.cartModel.update(
-      { Quantity },
-      { where: { cartId: userCart.id, id:cartItemId } }
-    );
-    return res.status(200).json({ message: "CART UPDATED!", updatedRows });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "ERROR", error });
-  }
-},
-   DeleteCart:async(req,res)=>
-   {
+  },
+  orderList: async (req, res) => {
+    try {
+      const order = await Models.orderModel.findAll({
+        include: [
+          {
+            model: Models.orderItemModel,
+          },
+        ],
+      });
+      return res.status(200).json({ message: "ORDER GET!", order });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
+    }
+  },
+  orderDetails: async (req, res) => {
+    try {
+      const { orderId } = req.body;
+      const order = await Models.orderModel.findOne({
+        where: { id: orderId },
+        include: [
+          {
+            model: Models.orderItemModel,
+          },
+        ],
+      });
+
+      return res.status(200).json({ message: "ORDER'S DETAILS GET!", order });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
+    }
+  },
+  driverlist:async(req,res) =>
+  {
     try
     {
-      const{cartItemId}=req.body;
-      let cart=await Models.cartModel.findOne({where:{id:cartItemId}})
-      if(cart)
-      {
-        cart=await Models.cartModel.destroy({where:{id:cartItemId}})
+    const drivers = await Models.userModel.findAll({
+      where: {
+        isOnline: 1,
+        isorderassign:0
       }
-      else
-      {
-        return res.status(404).json({message:"CART ITEM NOT FOUND!"})
-      }
-      return res.status(200).json({message:"DATA DELETED!",cart})
+    });
+     return res.status(200).json({message:"DRIVER AVAILABLE ARE:",drivers})
     }
     catch(error)
     {
       console.log(error)
       return res.status(500).json({message:"ERROR",error})
     }
-   },
-checkout: async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { addressId } = req.body;
-
-    if (!addressId) return res.status(404).json({ message: "ADDRESS REQUIRED!" });
-
-    const address = await Models.addressModel.findOne({ where: { id: addressId, userId } });
-    if (!address) return res.status(404).json({ message: "Invalid data!" });
-
-    const cart = await Models.cartManageModel.findOne({
-      where: { userId },
-      include: [
-        {
-          model: Models.cartModel,
-          include: [Models.productModel], // each cart item will have productModel
-        },
-      ],
-    });
-
-    console.log("======", cart);
-
-    if (!cart || cart.cartTables.length === 0) // <-- use cartTabless
-      return res.status(404).json({ message: "Cart is empty" });
-    // Calculate total
-    let total = 0;
-    cart.cartTables.forEach(item => {
-      total += item.Quantity * item.productTable.price;
-    });
-    // Create order
-    const order = await Models.orderModel.create({
-      userId,
-      addressId,
-      Amount: total,
-      status: 0,
-    });
-
-    // Create order items
-for(let items of cart.cartTables)
-      {
-        await Models.orderItemModel.create({
-  orderId: order.id,
-  userId,
-  addressId,
-  productId: items.productId,
-  Quantity: items.Quantity,
-  price: items.productTable.price,
-});
-      }
-     
-    // Clear cart items
-    // await Models.cartModel.destroy({ where: { cartId: cart.id } });
-
-    return res.status(200).json({ message: "Order placed successfully", orderId: order.id, totalAmount: total,cart});
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "ERROR", error });
-  }
-},
-orderList:async(req,res)=>
-{
-  try
+  },
+  orderAssign:async(req,res)=>
   {
-   
-    const order=await Models.orderModel.findAll({
-    include:[
-      {
-        model:Models.orderItemModel
-      }
-    ]})
-    return res.status(200).json({message:"ORDER GET!",order})
+    try
+    {
+       const userId=req.user.id;
+       const{orderId}=req.body
+       const driver=await Models.userModel.findOne({where:{id:userId,role:2}})
+       if(!driver)
+       {
+        return res.status(404).json({message:"USER NOT FOUND!"})
+       }
+       if(driver.isOnline===0)
+       {
+         return res.status(404).json({message:"DRIVER IS OFFLINE"})
+       }
+       if(driver.isorderassign===1)
+       {
+         return res.status(404).json({message:"DRIVER ALREADY ASSIGN"})
+       }
+       const order=await Models.orderModel.findOne({where:{id:orderId}})
+       if(!order)
+       {
+        return res.status(404).json({message:"ORDER NOT FOUND!"})
+       }
+      await Models.userModel.update({isOnline:1,isorderassign:1},{where:{id:userId}})
+       return res.status(200).json({message:"ORDER ASSIGN!",driver})
+    }
+    catch(error)
+    {
+      console.log(error)
+      return res.status(500).json({message:"ERROR",error})
+    }
   }
-  catch(error)
-  {
-    console.log(error)
-    return res.status(500).json({message:"ERROR",error})
-  }
-},
-orderDetails:async(req,res) =>
-{
-  try
-  {
-    const{orderId}=req.body;
-    const order=await Models.orderModel.findOne({where:{id:orderId},
-    include:[
-      {
-          model:Models.orderItemModel
-      }
-    ]})
-   
-    return res.status(200).json({message:"ORDER'S DETAILS GET!",order})
-  }
-  catch(error)
-  {
-    console.log(error)
-    return res.status(500).json({message:"ERROR",error})
-  }
-}
-
-}
+};
