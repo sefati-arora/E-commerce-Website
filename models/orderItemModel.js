@@ -19,7 +19,7 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
         productId:
         {
             type:Sequelize.UUID,
-            allowNull:true,
+            allowNull:false,
             references:
             {
                 model:"productTable",

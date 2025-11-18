@@ -5,7 +5,6 @@ const jwt = require("jsonwebtoken");
 const helper = require("../helper/validation");
 const commonhelper = require("../helper/commonHelper");
 const argon2 = require("argon2");
-const { QueryError } = require("sequelize");
 const otpManager = require("node-twillo-otp-manager")(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN,
@@ -15,6 +14,8 @@ Models.cartManageModel.hasMany(Models.cartModel, { foreignKey: "cartId" });
 Models.cartModel.belongsTo(Models.cartManageModel, { foreignKey: "cartId" });
 Models.cartModel.belongsTo(Models.productModel, { foreignKey: "productId" });
 Models.productModel.hasMany(Models.cartModel, { foreignKey: "productId" });
+Models.orderItemModel.belongsTo(Models.orderModel,{foreignKey:"orderId"});
+Models.orderModel.hasMany(Models.orderItemModel,{foreignKey:"orderId"})
 module.exports = {
   sidIdGenerateTwilio: async (req, res) => {
     try {
@@ -543,7 +544,7 @@ module.exports = {
        {
         return res.status(404).json({message:"prodctId and quantity not found!"})
        }
-       const user=await Models.cartManageModel.findOne({where:{userId}})
+       let user=await Models.cartManageModel.findOne({where:{userId}})
        if(!user)
        {
         user= await Models.cartManageModel.create(
@@ -611,7 +612,6 @@ module.exports = {
     return res.status(500).json({ message: "ERROR", error });
   }
 },
-
    DeleteCart:async(req,res)=>
    {
     try
@@ -633,5 +633,104 @@ module.exports = {
       console.log(error)
       return res.status(500).json({message:"ERROR",error})
     }
-   }
-};
+   },
+checkout: async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { addressId } = req.body;
+
+    if (!addressId) return res.status(404).json({ message: "ADDRESS REQUIRED!" });
+
+    const address = await Models.addressModel.findOne({ where: { id: addressId, userId } });
+    if (!address) return res.status(404).json({ message: "Invalid data!" });
+
+    const cart = await Models.cartManageModel.findOne({
+      where: { userId },
+      include: [
+        {
+          model: Models.cartModel,
+          include: [Models.productModel], // each cart item will have productModel
+        },
+      ],
+    });
+
+    console.log("======", cart);
+
+    if (!cart || cart.cartTables.length === 0) // <-- use cartTabless
+      return res.status(404).json({ message: "Cart is empty" });
+    // Calculate total
+    let total = 0;
+    cart.cartTables.forEach(item => {
+      total += item.Quantity * item.productTable.price;
+    });
+    // Create order
+    const order = await Models.orderModel.create({
+      userId,
+      addressId,
+      Amount: total,
+      status: 0,
+    });
+
+    // Create order items
+for(let items of cart.cartTables)
+      {
+        await Models.orderItemModel.create({
+  orderId: order.id,
+  userId,
+  addressId,
+  productId: items.productId,
+  Quantity: items.Quantity,
+  price: items.productTable.price,
+});
+      }
+     
+    // Clear cart items
+    // await Models.cartModel.destroy({ where: { cartId: cart.id } });
+
+    return res.status(200).json({ message: "Order placed successfully", orderId: order.id, totalAmount: total,cart});
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "ERROR", error });
+  }
+},
+orderList:async(req,res)=>
+{
+  try
+  {
+   
+    const order=await Models.orderModel.findAll({
+    include:[
+      {
+        model:Models.orderItemModel
+      }
+    ]})
+    return res.status(200).json({message:"ORDER GET!",order})
+  }
+  catch(error)
+  {
+    console.log(error)
+    return res.status(500).json({message:"ERROR",error})
+  }
+},
+orderDetails:async(req,res) =>
+{
+  try
+  {
+    const{orderId}=req.body;
+    const order=await Models.orderModel.findOne({where:{id:orderId},
+    include:[
+      {
+          model:Models.orderItemModel
+      }
+    ]})
+   
+    return res.status(200).json({message:"ORDER'S DETAILS GET!",order})
+  }
+  catch(error)
+  {
+    console.log(error)
+    return res.status(500).json({message:"ERROR",error})
+  }
+}
+
+}

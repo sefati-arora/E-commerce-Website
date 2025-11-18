@@ -34,4 +34,7 @@ router.post('/subscriptionDelete',authentication,userController.subscriptionDele
 router.post('/AddCartItem',authentication,userController.AddCartItem)
 router.post('/UpdateCart',authentication,userController.UpdateCart)
 router.post('/DeleteCart',authentication,userController.DeleteCart)
+router.post('/checkout',authentication,userController.checkout)
+router.post('/orderList',authentication,userController.orderList)
+router.post('/orderDetails',authentication,userController.orderDetails)
 module.exports=router

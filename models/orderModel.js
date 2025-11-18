@@ -16,18 +16,6 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
                 onUpdate:"CASCADE",
                 onDelete:"CASCADE"
             },
-            productId:
-            {
-                type:Sequelize.UUID,
-                allowNull:true,
-                references:
-                {
-                    model:"productTable",
-                    key:"id"
-                },
-                onUpdate:"CASCADE",
-                onDelete:"CASCADE"
-            },
             addressId:
             {
               type:Sequelize.UUID,
@@ -44,6 +32,12 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
             {
                 type:DataTypes.DOUBLE,
                 allowNull:true
+            },
+            status:
+            {
+                type:DataTypes.INTEGER,
+                allowNull:true,
+                defaultValue:1
             }
         },
         {
