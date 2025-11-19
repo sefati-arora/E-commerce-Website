@@ -44,13 +44,13 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
                 allowNull:true,
                 defaultValue:0  //0 for not read 1 for read
             },
-            bookingId:
+            orderId:
             {
                 type:Sequelize.UUID,
                 allowNull:true,
                 references:
                 {
-                    model:"bookingTable",
+                    model:"orderTable",
                     key:"id"
                 },
                 onDelete:"CASCADE",

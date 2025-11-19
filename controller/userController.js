@@ -381,59 +381,6 @@ module.exports = {
       return res.status(500).json({ message: "ERROR", error });
     }
   },
-  bookingCreate: async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const schema = Joi.object({
-        cartId: Joi.string().required(),
-        addressId: Joi.string().required(),
-        time: Joi.string().required(),
-        bookingId: Joi.string().required(),
-      });
-      const payload = await helper.validationJoi(req.body, schema);
-      const defaultAddress = await Models.addressModel.findOne({
-        where: { id: payload.addressId, userId: userId, isDefault: 1 },
-      });
-
-      if (!defaultAddress) {
-        return res.status(400).json({
-          message: "Invalid address selected",
-        });
-      }
-      const booking = await Models.bookingModel.create({
-        userId,
-        cartId: payload.cartId,
-        addressId: payload.addressId,
-      });
-      const slot = await Models.bookingSlot.create({
-        userId,
-        bookingId: booking.id,
-        time: payload.time,
-      });
-      return res
-        .status(200)
-        .json({ message: "BOOKING CREATED!", booking, slot });
-    } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: "ERROR", error });
-    }
-  },
-  bookingDeleted: async (req, res) => {
-    try {
-      const { bookingId } = req.body;
-      const booking = await Models.bookingModel.findOne({
-        where: { id: bookingId },
-      });
-      if (!booking) {
-        return res.status(404).json({ message: "BOOKING NOT FOUND!" });
-      }
-      await Models.bookingModel.destroy({ where: { id: bookingId } });
-      return res.status(200).json({ message: "DATA DELETED!", booking });
-    } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: "ERROR", error });
-    }
-  },
   getproduct: async (req, res) => {
     try {
       const { productId } = req.body;
@@ -661,19 +608,28 @@ module.exports = {
       const userId = req.user.id;
       const userLatitude = req.user.latitude; 
       const userLongitude = req.user.longitude;
-      const { addressId, productId,storeId } = req.body;
+      const { addressId, productId,storeId,assignDriverId,senderId,receiverId} = req.body;
       if (!addressId)
         return res.status(404).json({ message: "ADDRESS REQUIRED!" });
       const address = await Models.addressModel.findOne({
-        where: { id: addressId, userId },
+        where: { id: addressId, userId,isDefault:1},
       });
       if (!address) return res.status(404).json({ message: "Invalid data!" });
       console.log("PRODUCT ID:", productId);
+      //storeId....
       const stored=await Models.storeModel.findOne({where:{id:storeId}})
       if(!stored)
       {
          console.log("storeId:",stored)
       }
+
+      //assign driver....
+      const driver=await Models.userModel.findOne({where:{id:assignDriverId,role:2}})
+      if(!driver)
+      {
+        console.log("driver not found!")
+      }
+      console.log("driver:",driver)
       //PRODUCT IN STORE..
       const product = await Models.storeModel.findOne({
         where: { productId },
@@ -715,7 +671,7 @@ module.exports = {
       console.log("NEAR STORE:", nearestStore);
       console.log(">>>",userLatitude)
       console.log("<<<<<",userLongitude)
-      
+
       //cart product
       const cart = await Models.cartManageModel.findOne({
         where: { userId },
@@ -728,7 +684,6 @@ module.exports = {
       });
 
       console.log("======", cart);
-
       if (!cart || cart.cartTables.length === 0)
         return res.status(404).json({ message: "Cart is empty" });
       // Calculate total
@@ -742,6 +697,7 @@ module.exports = {
         userId,
         addressId,
         storeId,
+        assignDriverId,
         Amount: total,
         status: 0,
       });
@@ -759,13 +715,24 @@ module.exports = {
       }
 
       //Clear cart items
-      await Models.cartModel.destroy({ where: { cartId: cart.id } });
-
+     // await Models.cartModel.destroy({ where: { cartId: cart.id } });
+     
+      //create notification
+      const notified=await Models.notificationModel.create(
+        {
+         senderId:userId,
+         receiverId:assignDriverId,
+          orderId:order.id,
+          title:"NEW ORDER!",
+          message:"NEW ORDER!",
+        }
+      )
+      console.log("new order notification",notified)
       return res.status(200).json({
         message: "Order placed successfully",
         orderId: order.id,
         totalAmount: total,
-        cart,product,nearestStore
+        cart,product,nearestStore,notified
       });
     } catch (error) {
       console.log(error);
