@@ -1,0 +1,36 @@
+module.exports=(Sequelize,sequelize,DataTypes) =>
+{
+    return sequelize.define(
+        "storeTable",
+        {
+            ...require('./core')(Sequelize,DataTypes),
+            sellerId:
+            { 
+                type:Sequelize.UUID,
+                allowNull:true,
+                references:
+                {
+                   model:"userTable",
+                   key:"id"
+                },
+                onupdate:"CASCADE",
+                onDelete:"CASCADE"
+            },
+            productId:
+            {
+                type:Sequelize.UUID,
+                allowNull:true,
+                references:
+                {
+                    model:"productTable",
+                    key:"id"
+                },
+                onUpdate:"CASCADE",
+                onDelete:"CASCADE"
+            }
+        },
+        {
+            tableName:"storeTable"
+        }
+    )
+}

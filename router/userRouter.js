@@ -39,4 +39,6 @@ router.post('/orderList',authentication,userController.orderList)
 router.post('/orderDetails',authentication,userController.orderDetails)
 router.post('/orderAssign',authentication,userController.orderAssign)
 router.post('/driverlist',authentication,userController.driverlist)
+router.post('/createStore',authentication,userController.createStore)
+router.post('/storeProduct',authentication,userController.StoreProduct)
 module.exports=router

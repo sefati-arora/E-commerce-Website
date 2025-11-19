@@ -48,7 +48,7 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
         role:
         {
          type:DataTypes.INTEGER,
-         defaultValue:1
+         defaultValue:1    //1 user 2 driver 3 seller
         },
         isOnline:
         {
@@ -59,6 +59,21 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
         {
          type:DataTypes.INTEGER,
          defaultValue:0    //0 for assign  1 for not assign
+        },
+        location:
+        {
+         type:DataTypes.STRING(225),
+         allowNull:true
+        },
+        latitude:
+        {
+         type:DataTypes.STRING(225),
+         allowNull:true
+        },
+        longitude:
+        {
+           type:DataTypes.STRING(225),
+           allowNull:true
         }
  },
  {

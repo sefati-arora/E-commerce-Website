@@ -38,6 +38,30 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
                 type:DataTypes.INTEGER,
                 allowNull:true,
                 defaultValue:1
+            },
+            storeId:
+            {
+                type:Sequelize.UUID,
+                allowNull:true,
+                references:
+                {
+                    model:"storeTable",
+                    key:"id"
+                },
+                onUpdate:"CASCADE",
+                onDelete:"CASCADE"
+            },
+            assignDriverId:
+            {
+                type:Sequelize.UUID,
+                allowNull:true,
+                references:
+                {
+                    model:"userTable",
+                    key:"id"
+                },
+                onUpdate:"CASCADE",
+                onDelete:"CASCADE"
             }
         },
         {

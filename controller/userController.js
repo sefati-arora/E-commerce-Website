@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const helper = require("../helper/validation");
 const commonhelper = require("../helper/commonHelper");
 const argon2 = require("argon2");
+const { Op, literal } = require("sequelize");
 const otpManager = require("node-twillo-otp-manager")(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN,
@@ -16,6 +17,9 @@ Models.cartModel.belongsTo(Models.productModel, { foreignKey: "productId" });
 Models.productModel.hasMany(Models.cartModel, { foreignKey: "productId" });
 Models.orderItemModel.belongsTo(Models.orderModel, { foreignKey: "orderId" });
 Models.orderModel.hasMany(Models.orderItemModel, { foreignKey: "orderId" });
+Models.productModel.hasMany(Models.storeModel, { foreignKey: "productId" });
+Models.storeModel.belongsTo(Models.productModel, { foreignKey: "productId" });
+
 module.exports = {
   sidIdGenerateTwilio: async (req, res) => {
     try {
@@ -38,6 +42,9 @@ module.exports = {
         password: Joi.string().required(),
         devicetoken: Joi.string().required(),
         role: Joi.string().required(),
+        location: Joi.string().required(),
+        latitude: Joi.string().required(),
+        longitude: Joi.string().required(),
       });
       const payload = await helper.validationJoi(req.body, schema);
       const {
@@ -49,6 +56,9 @@ module.exports = {
         password,
         devicetoken,
         role,
+        locationFrom,
+        latitude,
+        longitude,
       } = payload;
       const hashpassword = await argon2.hash(password);
       const file = req.files?.profile;
@@ -68,6 +78,9 @@ module.exports = {
         devicetoken,
         profile: path,
         role,
+        locationFrom,
+        latitude,
+        longitude,
       });
       if (user) {
         const phone = payload.countryCode + payload.phoneNumber;
@@ -206,8 +219,20 @@ module.exports = {
     try {
       const userId = req.user.id;
       console.log(">>>", userId);
-      const { firstName, lastName, phoneNumber, countryCode, email, profile,role,isOnline,isorderassign } =
-        req.body;
+      const {
+        firstName,
+        lastName,
+        phoneNumber,
+        countryCode,
+        email,
+        profile,
+        role,
+        isOnline,
+        isorderassign,
+        location,
+        latitude,
+        longitude
+      } = req.body;
       const user = await Models.userModel.findOne({ where: { id: userId } });
       if (!user) {
         return res.status(404).json({ message: "USER NOT FOUND!" });
@@ -218,7 +243,20 @@ module.exports = {
         profilepath = await commonhelper.fileUpload(file);
       }
       await Models.userModel.update(
-        { firstName, lastName, phoneNumber, countryCode, email, profile,role,isOnline,isorderassign },
+        {
+          firstName,
+          lastName,
+          phoneNumber,
+          countryCode,
+          email,
+          profile,
+          role,
+          isOnline,
+          isorderassign,
+          location,
+          latitude,
+          longitude
+        },
         { where: { id: userId } }
       );
       return res.status(200).json({ message: "USER DATA UPDATED", user });
@@ -250,6 +288,8 @@ module.exports = {
         state: Joi.string().required(),
         city: Joi.string().required(),
         hnumber: Joi.string().required(),
+        latitude: Joi.string().required(),
+        longitude: Joi.string().required(),
       });
       const payload = await helper.validationJoi(req.body, schema);
       const users = await Models.userModel.findOne({ where: { id: userId } });
@@ -263,6 +303,8 @@ module.exports = {
         state: payload.state,
         city: payload.city,
         hnumber: payload.hnumber,
+        latitude: payload.latitude,
+        longitude: payload.longitude,
       });
       return res.status(200).json({ message: "ADDRESS ADDED!", user, users });
     } catch (error) {
@@ -273,7 +315,8 @@ module.exports = {
   editAddress: async (req, res) => {
     try {
       const userId = req.user.id;
-      const { addressId, country, state, city, hnumber } = req.body;
+      const { addressId, country, state, city, hnumber, latitude, longitude } =
+        req.body;
       const userexist = await Models.addressModel.findOne({
         where: { id: addressId, userId },
       });
@@ -281,7 +324,7 @@ module.exports = {
         return res.status(404).json({ message: "USER NOT FOUND!" });
       }
       await Models.addressModel.update(
-        { country, state, city, hnumber },
+        { country, state, city, hnumber, latitude, longitude },
         { where: { id: addressId, userId } }
       );
       return res.status(200).json({ message: "DATA UPDATED!" });
@@ -327,11 +370,11 @@ module.exports = {
   cartDataDeleted: async (req, res) => {
     try {
       const { cartId } = req.body;
-      const cart = await Models.cartModel.findOne({ where: { id:cartId } });
+      const cart = await Models.cartModel.findOne({ where: { id: cartId } });
       if (!cart) {
         return res.status(404).json({ message: "CART DATA NOT FOUND!" });
       }
-      await Models.cartModel.destroy({ where: { id:cartId } });
+      await Models.cartModel.destroy({ where: { id: cartId } });
       return res.status(200).json({ message: "CART DATA DELETED!", cart });
     } catch (error) {
       console.log(error);
@@ -394,6 +437,8 @@ module.exports = {
   getproduct: async (req, res) => {
     try {
       const { productId } = req.body;
+      console.log(">>>>", req.body);
+
       if (!productId) {
         return res.status(404).json({ message: "ID NOT FOUND!" });
       }
@@ -614,22 +659,70 @@ module.exports = {
   checkout: async (req, res) => {
     try {
       const userId = req.user.id;
-      const { addressId } = req.body;
-
+      const userLatitude = req.user.latitude; 
+      const userLongitude = req.user.longitude;
+      const { addressId, productId,storeId } = req.body;
       if (!addressId)
         return res.status(404).json({ message: "ADDRESS REQUIRED!" });
-
       const address = await Models.addressModel.findOne({
         where: { id: addressId, userId },
       });
       if (!address) return res.status(404).json({ message: "Invalid data!" });
+      console.log("PRODUCT ID:", productId);
+      const stored=await Models.storeModel.findOne({where:{id:storeId}})
+      if(!stored)
+      {
+         console.log("storeId:",stored)
+      }
+      //PRODUCT IN STORE..
+      const product = await Models.storeModel.findOne({
+        where: { productId },
+        include: [
+          {
+            model: Models.productModel,
+          },
+        ],
+      });
+      console.log("STORE RESULT:", product);
+      if (!product) {
+        return res.status(404).json({ message: "PRODUCT OUT OF STOCK!" });
+      }
 
+      //FIND STORE
+      const store = await Models.productModel.findAll({
+        where: { id: productId },
+        include: [
+          {
+            model: Models.storeModel,
+          },
+        ],
+      });
+      console.log("PRODUCT IN STORE", store);
+
+        //STORE NEARBY........
+      const nearestStore = await Models.userModel.findOne({where:{id:userId,role:3},
+        order: literal(`
+        6371 * acos(
+      cos(radians(${userLatitude})) *
+      cos(radians(latitude)) *
+      cos(radians(longitude) - radians(${userLongitude})) +
+      sin(radians(${userLatitude})) *
+      sin(radians(latitude))
+    )
+  `),
+        limit: 1,
+      });
+      console.log("NEAR STORE:", nearestStore);
+      console.log(">>>",userLatitude)
+      console.log("<<<<<",userLongitude)
+      
+      //cart product
       const cart = await Models.cartManageModel.findOne({
         where: { userId },
         include: [
           {
             model: Models.cartModel,
-            include: [Models.productModel], // each cart item will have productModel
+            include: [Models.productModel],
           },
         ],
       });
@@ -637,17 +730,18 @@ module.exports = {
       console.log("======", cart);
 
       if (!cart || cart.cartTables.length === 0)
-        // <-- use cartTabless
         return res.status(404).json({ message: "Cart is empty" });
       // Calculate total
       let total = 0;
       cart.cartTables.forEach((item) => {
         total += item.Quantity * item.productTable.price;
       });
+
       // Create order
       const order = await Models.orderModel.create({
         userId,
         addressId,
+        storeId,
         Amount: total,
         status: 0,
       });
@@ -664,17 +758,15 @@ module.exports = {
         });
       }
 
-      // Clear cart items
-      // await Models.cartModel.destroy({ where: { cartId: cart.id } });
+      //Clear cart items
+      await Models.cartModel.destroy({ where: { cartId: cart.id } });
 
-      return res
-        .status(200)
-        .json({
-          message: "Order placed successfully",
-          orderId: order.id,
-          totalAmount: total,
-          cart,
-        });
+      return res.status(200).json({
+        message: "Order placed successfully",
+        orderId: order.id,
+        totalAmount: total,
+        cart,product,nearestStore
+      });
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: "ERROR", error });
@@ -713,55 +805,81 @@ module.exports = {
       return res.status(500).json({ message: "ERROR", error });
     }
   },
-  driverlist:async(req,res) =>
-  {
-    try
-    {
-    const drivers = await Models.userModel.findAll({
-      where: {
-        isOnline: 1,
-        isorderassign:0
-      }
-    });
-     return res.status(200).json({message:"DRIVER AVAILABLE ARE:",drivers})
-    }
-    catch(error)
-    {
-      console.log(error)
-      return res.status(500).json({message:"ERROR",error})
+  driverlist: async (req, res) => {
+    try {
+      const drivers = await Models.userModel.findAll({
+        where: {
+          isOnline: 1,
+          isorderassign: 0,
+        },
+      });
+      return res
+        .status(200)
+        .json({ message: "DRIVER AVAILABLE ARE:", drivers });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
     }
   },
-  orderAssign:async(req,res)=>
-  {
-    try
-    {
-       const userId=req.user.id;
-       const{orderId}=req.body
-       const driver=await Models.userModel.findOne({where:{id:userId,role:2}})
-       if(!driver)
-       {
-        return res.status(404).json({message:"USER NOT FOUND!"})
-       }
-       if(driver.isOnline===0)
-       {
-         return res.status(404).json({message:"DRIVER IS OFFLINE"})
-       }
-       if(driver.isorderassign===1)
-       {
-         return res.status(404).json({message:"DRIVER ALREADY ASSIGN"})
-       }
-       const order=await Models.orderModel.findOne({where:{id:orderId}})
-       if(!order)
-       {
-        return res.status(404).json({message:"ORDER NOT FOUND!"})
-       }
-      await Models.userModel.update({isOnline:1,isorderassign:1},{where:{id:userId}})
-       return res.status(200).json({message:"ORDER ASSIGN!",driver})
+  orderAssign: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { orderId } = req.body;
+      const driver = await Models.userModel.findOne({
+        where: { id: userId, role: 2 },
+      });
+      if (!driver) {
+        return res.status(404).json({ message: "USER NOT FOUND!" });
+      }
+      if (driver.isOnline === 0) {
+        return res.status(404).json({ message: "DRIVER IS OFFLINE" });
+      }
+      if (driver.isorderassign === 1) {
+        return res.status(404).json({ message: "DRIVER ALREADY ASSIGN" });
+      }
+      const order = await Models.orderModel.findOne({ where: { id: orderId } });
+      if (!order) {
+        return res.status(404).json({ message: "ORDER NOT FOUND!" });
+      }
+      await Models.userModel.update(
+        { isOnline: 1, isorderassign: 1 },
+        { where: { id: userId } }
+      );
+      return res.status(200).json({ message: "ORDER ASSIGN!", driver });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
     }
-    catch(error)
-    {
-      console.log(error)
-      return res.status(500).json({message:"ERROR",error})
+  },
+  createStore: async (req, res) => {
+    try {
+      const sellerId = req.user.id;
+      const { productId } = req.body;
+      if (!productId) {
+        return res.status(404).json({ message: "PRODUCT NOT FOUND!" });
+      }
+      const seller = await Models.storeModel.create({ sellerId, productId });
+      return res.status(200).json({ message: "STORE CREATED!", seller });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
     }
-  }
+  },
+  StoreProduct: async (req, res) => {
+    try {
+      const sellerId = req.user.id;
+      const store = await Models.storeModel.findOne({
+        where: { sellerId },
+        include: [
+          {
+            model: Models.productModel,
+          },
+        ],
+      });
+      return res.status(200).json({ message: "PRODUCT IN STORE!", store });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
+    }
+  },
 };
