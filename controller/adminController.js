@@ -73,6 +73,7 @@ module.exports = {
         title: Joi.string().required(),
         description: Joi.string().required(),
         price: Joi.string().required(),
+        offer:Joi.string().optional()
       });
       const payload = await helper.validationJoi(req.body, schema);
       let file = req.files?.file;
@@ -88,6 +89,7 @@ module.exports = {
         title: payload.title,
         description: payload.description,
         price: payload.price,
+        offer:payload.offer
       });
       for (let i = 0; i < file.length; i++) {
         const path = await commonhelper.fileUpload(file[i]);
@@ -104,7 +106,7 @@ module.exports = {
   },
   productEdit: async (req, res) => {
     try {
-      const { productId, categoryId, title, description, price, status } =
+      const { productId, categoryId, title, description, price, status,offer } =
         req.body;
       const product = await Models.productModel.findOne({
         where: { id: productId },
@@ -121,7 +123,7 @@ module.exports = {
         file = [file];
       }
       await Models.productModel.update(
-        { categoryId, title, description, price, status },
+        { categoryId, title, description, price, status ,offer},
         {
           where: { id: productId },
         });

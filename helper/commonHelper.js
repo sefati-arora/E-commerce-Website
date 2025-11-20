@@ -128,13 +128,53 @@ otpSendLinkHTML : async (req, email, otp, subject = "Verify your account") => {
   {
     try
     {
-       const htmlTemplate=`<div style="max-width: 600px; margin: auto; background: #ffffff; padding: 25px; border-radius: 10px; 
-                  font-family: 'Segoe UI', Tahoma, sans-serif; box-shadow: 0px 4px 12px rgba(0,0,0,0.08);">
-        <h2 style="color: #2e2e2e; text-align: center;">${subject}</h2>
-        <p style="font-size: 16px; color: #555; text-align: center;">${message}</p>
-        <hr style="border: 0.5px solid #eee; margin: 25px 0;">
-        <p style="font-size: 12px; color: #aaa; text-align: center;">&copy; 2025 Demo. All rights reserved.</p>
-      </div>`
+       const htmlTemplate = `
+<div style="
+  max-width:600px;
+  margin:auto;
+  background:#ffffff;
+  padding:25px;
+  border-radius:10px;
+  font-family:'Segoe UI', Tahoma, sans-serif;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+">
+  
+  <h2 style="
+    color:#2e2e2e;
+    text-align:center;
+    margin-bottom:15px;
+  ">
+    ${subject}
+  </h2>
+
+  <p style="
+    font-size:16px;
+    color:#555;
+    text-align:center;
+    line-height:1.6;
+    margin-top:0;
+  ">
+    ${message}
+  </p>
+
+  <hr style="
+    border:0;
+    border-top:1px solid #eee;
+    margin:25px 0;
+  ">
+
+  <p style="
+    font-size:12px;
+    color:#aaa;
+    text-align:center;
+    margin:0;
+  ">
+    &copy; 2025 Demo. All rights reserved.
+  </p>
+
+</div>
+`;
+
        let transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
       port: process.env.MAIL_PORT,
@@ -150,7 +190,8 @@ otpSendLinkHTML : async (req, email, otp, subject = "Verify your account") => {
       to: email,
       subject: subject,
       text:message,
-      html: htmlTemplate,
+      message:"THANK YOU FOR PLACING YOUR ORDER!",
+      // html: htmlTemplate,
     };
 
     const info = await transporter.sendMail(mailOptions);

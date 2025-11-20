@@ -37,7 +37,11 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
                 allowNull:true,
                 defaultValue:0   //0 for inactive 1 for active
             },
-            
+            offer:
+            {
+                type:DataTypes.INTEGER,
+                defaultValue:0   
+            }
         },
         {
             tableName:"productTable"

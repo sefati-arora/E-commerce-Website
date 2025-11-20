@@ -1,5 +1,4 @@
 const Sequelize=require("sequelize");
-const storeModel = require("./storeModel");
 const sequelize=require('../config/connectdb').sequelize;
 
 module.exports=
@@ -19,5 +18,7 @@ module.exports=
      cartManageModel:require('./cartManageModel')(Sequelize,sequelize,Sequelize.DataTypes),
      orderModel:require('./orderModel')(Sequelize,sequelize,Sequelize.DataTypes),
      orderItemModel:require('./orderItemModel')(Sequelize,sequelize,Sequelize.DataTypes),
-     storeModel:require('./storeModel')(Sequelize,sequelize,Sequelize.DataTypes)
+     storeModel:require('./storeModel')(Sequelize,sequelize,Sequelize.DataTypes),
+     productReviewModel:require('./productReviewModel')(Sequelize,sequelize,Sequelize.DataTypes),
+     likeModel:require('./likeModel')(Sequelize,sequelize,Sequelize.DataTypes),
 }

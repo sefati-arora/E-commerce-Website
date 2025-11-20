@@ -19,6 +19,19 @@ Models.orderItemModel.belongsTo(Models.orderModel, { foreignKey: "orderId" });
 Models.orderModel.hasMany(Models.orderItemModel, { foreignKey: "orderId" });
 Models.productModel.hasMany(Models.storeModel, { foreignKey: "productId" });
 Models.storeModel.belongsTo(Models.productModel, { foreignKey: "productId" });
+Models.userModel.hasMany(Models.orderModel, { foreignKey: "userId" });
+Models.orderModel.belongsTo(Models.userModel, { foreignKey: "userId" });
+Models.productModel.hasMany(Models.orderItemModel, { foreignKey: "productId" });
+Models.orderItemModel.belongsTo(Models.productModel, {
+  foreignKey: "productId",
+});
+Models.productReviewModel.hasMany(Models.likeModel, {
+  foreignKey: "ReviewId"
+});
+
+Models.likeModel.belongsTo(Models.productReviewModel, {
+  foreignKey: "ReviewId",as:"ReviewLikes"
+});
 
 module.exports = {
   sidIdGenerateTwilio: async (req, res) => {
@@ -231,7 +244,7 @@ module.exports = {
         isorderassign,
         location,
         latitude,
-        longitude
+        longitude,
       } = req.body;
       const user = await Models.userModel.findOne({ where: { id: userId } });
       if (!user) {
@@ -255,7 +268,7 @@ module.exports = {
           isorderassign,
           location,
           latitude,
-          longitude
+          longitude,
         },
         { where: { id: userId } }
       );
@@ -606,31 +619,39 @@ module.exports = {
   checkout: async (req, res) => {
     try {
       const userId = req.user.id;
-      const userLatitude = req.user.latitude; 
+      const userLatitude = req.user.latitude;
       const userLongitude = req.user.longitude;
-      const { addressId, productId,storeId,assignDriverId,senderId,receiverId} = req.body;
+      const {
+        addressId,
+        productId,
+        storeId,
+        assignDriverId,
+      } = req.body;
       if (!addressId)
         return res.status(404).json({ message: "ADDRESS REQUIRED!" });
       const address = await Models.addressModel.findOne({
-        where: { id: addressId, userId,isDefault:1},
+        where: { id: addressId, userId, isDefault: 1 },
       });
       if (!address) return res.status(404).json({ message: "Invalid data!" });
       console.log("PRODUCT ID:", productId);
-      //storeId....
-      const stored=await Models.storeModel.findOne({where:{id:storeId}})
-      if(!stored)
-      {
-         console.log("storeId:",stored)
+
+      //...........STOREID..........................
+      const stored = await Models.storeModel.findOne({
+        where: { id: storeId },
+      });
+      if (!stored) {
+        console.log("storeId:", stored);
       }
 
-      //assign driver....
-      const driver=await Models.userModel.findOne({where:{id:assignDriverId,role:2}})
-      if(!driver)
-      {
-        console.log("driver not found!")
+      //...................SELLERID...................
+      let seller = await Models.userModel.findOne({
+        where: { id: userId, role: 3 },
+      });
+      if (!seller) {
+        console.log("sellerId not found!");
       }
-      console.log("driver:",driver)
-      //PRODUCT IN STORE..
+
+      //.........PRODUCT IN STORE............
       const product = await Models.storeModel.findOne({
         where: { productId },
         include: [
@@ -655,8 +676,9 @@ module.exports = {
       });
       console.log("PRODUCT IN STORE", store);
 
-        //STORE NEARBY........
-      const nearestStore = await Models.userModel.findOne({where:{id:userId,role:3},
+      //........STORE NEARBY........
+      const nearestStore = await Models.userModel.findOne({
+        where: { id: userId, role: 3 },
         order: literal(`
         6371 * acos(
       cos(radians(${userLatitude})) *
@@ -669,8 +691,8 @@ module.exports = {
         limit: 1,
       });
       console.log("NEAR STORE:", nearestStore);
-      console.log(">>>",userLatitude)
-      console.log("<<<<<",userLongitude)
+      console.log(">>>", userLatitude);
+      console.log("<<<<<", userLongitude);
 
       //cart product
       const cart = await Models.cartManageModel.findOne({
@@ -688,17 +710,20 @@ module.exports = {
         return res.status(404).json({ message: "Cart is empty" });
       // Calculate total
       let total = 0;
-      cart.cartTables.forEach((item) => {
-        total += item.Quantity * item.productTable.price;
-      });
-
-      // Create order
+     cart.cartTables.forEach((item) => {
+  let price = item.productTable.price;
+  let offerPercentage = item.productTable.offer || 0; 
+  let discount = offerPercentage / 100;
+  let finalPricePerItem = price * (1 - discount);
+  total += finalPricePerItem * item.Quantity;
+});
+     // Create order
       const order = await Models.orderModel.create({
         userId,
         addressId,
         storeId,
         assignDriverId,
-        Amount: total,
+        Amount:total,
         status: 0,
       });
 
@@ -711,28 +736,195 @@ module.exports = {
           productId: items.productId,
           Quantity: items.Quantity,
           price: items.productTable.price,
+          title: items.productTable.title,
+        });
+      }
+      //assign driver....
+      const driver = await Models.userModel.findOne({
+        where: { id: assignDriverId, role: 2 },
+      });
+      if (!driver) {
+        console.log("driver not found!");
+      }
+      console.log("driver:", driver);
+      //driver status...
+      const driverstatus = await Models.userModel.findOne({
+        where: { id: assignDriverId, role: 2 },
+      });
+      if (driverstatus) {
+        await Models.userModel.update(
+          { status: 1 },
+          { where: { id: assignDriverId, role: 2 } }
+        );
+      }
+      console.log("driver status:", driverstatus);
+      // create notification after dispatch
+
+      const dispatch = await Models.userModel.findOne({
+        where: { id: assignDriverId, role: 2, status: 1 },
+      });
+
+      if (dispatch) {
+        const existingNotification = await Models.notificationModel.findOne({
+          where: {
+            receiverId: userId,
+            isnotification: 1,
+          },
+        });
+
+        if (!existingNotification) {
+          await Models.notificationModel.create({
+            senderId: seller.id,
+            receiverId: userId,
+            orderId: order.id,
+            title: "Order dispatched successfully",
+            message: "ORDER DISPATCH!",
+            isnotification: 1,
+          });
+        }
+      }
+      console.log("ORDER DISPATCHED:", dispatch);
+
+      //order history.........
+      const orderhistory = await Models.userModel.findAll({
+        where: { id: userId },
+        include: [
+          {
+            model: Models.orderModel,
+          },
+        ],
+      });
+      console.log("order history:", orderhistory);
+
+      //SEND MAIL AFTER PLACING ORDER!
+      const secondAgo = new Date(Date.now() - 1000);
+      const usermail = await Models.userModel.findOne({
+        where: { id: userId },
+        include: [
+          {
+            model: Models.orderModel,
+            where: {
+              createdAt: {
+                [Op.gte]: secondAgo,
+              },
+            },
+            include: [
+              {
+                model: Models.orderItemModel,
+                include: [{ model: Models.productModel }],
+              },
+            ],
+          },
+        ],
+      });
+
+      // Check mail and order details
+      if (usermail && usermail.email) {
+        const latestOrder = usermail.orderTables?.[0];
+        const productDetails = latestOrder.orderItemTables
+          .map((item) => {
+            const product = item.productTable;
+            return `
+Product: ${product?.title}
+Price: ${item.price}
+Quantity: ${item.Quantity}
+    `;
+          })
+          .join("\n");
+        const emailBody = `
+Hello ${usermail.name || "User"},
+Thank you for your purchase!
+
+Here are your order details:
+Order ID: ${latestOrder?.id}
+Total Amount: ${latestOrder?.Amount}
+Address: ${address.hnumber}, ${address.city}, ${address.state}, ${
+          address.country
+        }
+Product Details:
+${productDetails}
+`;
+        // Send the email
+        await commonhelper.sendMail(
+          req,
+          usermail.email,
+          "Your Order Details",
+          emailBody
+        );
+
+        console.log(`ORDER EMAIL SENT TO: ${usermail.email}`);
+      }
+
+      //NOTIFICATION FOR ORDER PLACING!
+      const orderplace = await Models.orderModel.findOne({
+        where: { id: order.id, userId },
+      });
+      if (orderplace) {
+        await Models.notificationModel.create({
+          senderId: userId,
+          receiverId: userId,
+          title: "CONGRATULATIONS,ORDER PLACED",
         });
       }
 
-      //Clear cart items
-     // await Models.cartModel.destroy({ where: { cartId: cart.id } });
-     
       //create notification
-      const notified=await Models.notificationModel.create(
-        {
-         senderId:userId,
-         receiverId:assignDriverId,
-          orderId:order.id,
-          title:"NEW ORDER!",
-          message:"NEW ORDER!",
-        }
-      )
-      console.log("new order notification",notified)
+      const notified = await Models.notificationModel.create({
+        senderId: userId,
+        receiverId: assignDriverId,
+        orderId: order.id,
+        title: "NEW ORDER!",
+        message: "NEW ORDER!",
+      });
+      console.log("new order notification", notified);
+
+      // notification to user after assign driver
+      const notification = await Models.notificationModel.create({
+        senderId: seller.id,
+        receiverId: userId,
+        orderId: order.id,
+        title: "YOUR DRIVER HAS BEEN ASSIGNED TO YOUR ORDER!",
+        message: "DRIVER ASSIGN!",
+      });
+      console.log("driver assigned", notification);
+
+      //order delivered notification....
+      const delivered = await Models.userModel.findOne({
+        where: { id: assignDriverId, role: 2 },
+      });
+      if (delivered) {
+        await Models.userModel.update(
+          { status: 2 },
+          { where: { id: assignDriverId, role: 2 } }
+        );
+      }
+      console.log("driver status:", delivered);
+      const orderdelivered = await Models.userModel.findOne({
+        where: { id: assignDriverId, role: 2, status: 2 },
+      });
+      if (orderdelivered) {
+        await Models.notificationModel.create({
+          senderId: seller.id,
+          receiverId: userId,
+          orderId: order.id,
+          title: "ORDER DELIVERED",
+          message: "ORDER DELIVERED SUCCESSFULLY!",
+        });
+      }
+      console.log("ORDER DELIVERED NOTIFICATION", orderdelivered);
+      //Clear cart items
+      // await Models.cartModel.destroy({ where: { cartId: cart.id } });
       return res.status(200).json({
         message: "Order placed successfully",
         orderId: order.id,
-        totalAmount: total,
-        cart,product,nearestStore,notified
+        totalAmount:total,
+        cart,
+        product,
+        nearestStore,
+        notified,
+        orderplace,
+        orderhistory,
+        notification,
+        dispatch,
       });
     } catch (error) {
       console.log(error);
@@ -849,4 +1041,97 @@ module.exports = {
       return res.status(500).json({ message: "ERROR", error });
     }
   },
+  productReview:async(req,res) =>
+  {
+    try
+    {
+      const userId=req.user.id;
+      const{productId}=req.body;
+      const schema=Joi.object({
+        productId:Joi.string().required(),
+        message:Joi.string().required()
+      });
+      const payload=await helper.validationJoi(req.body,schema);
+      const file = req.files.file;
+      const path = await commonhelper.fileUpload(file);
+      const{message}=payload;
+      const review=await Models.productReviewModel.create({userId,productId,message,image:path});
+      return res.status(200).json({message:"REVIEW BY USER",review})
+    }
+    catch(error)
+    {
+      console.log(error)
+      return res.status(500).json({message:"ERROR",error})
+    }
+  },
+ createLike: async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { ReviewId } = req.body;
+    const existingLike = await Models.likeModel.findOne({
+      where: { userId, ReviewId }
+    });
+    if (existingLike) {
+      return res.status(400).json({ message: "Already liked" });
+    }
+    const like = await Models.likeModel.create({ userId, ReviewId });
+
+    return res.status(200).json({ message: "LIKE CREATED", like });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "ERROR" });
+  }
+},
+countLikes:async(req,res)=>
+{
+  try
+  {
+    const{ReviewId}=req.body;
+    const likes=await Models.likeModel.findAndCountAll({
+      where:{ReviewId},
+      include:
+      [
+        {
+          model:Models.productReviewModel,
+          as:"ReviewLikes"
+        }
+      ]
+    })
+    return res.status(200).json({message:"USER LIKES:",likes})
+  }
+  catch(error)
+  {
+    console.log(error)
+    return res.status(500).json({message:"ERROR",error})
+  }
+},
+productListing: async (req, res) => {
+  try {
+    const search = (req.query.search || "").trim();
+    const categoryId = req.query.categoryId || null;
+
+    let where = {};
+
+    // Add search filter if search text exists
+    if (search !== "") {
+      where[Op.or] = [
+        { title: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } }
+      ];
+    }
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+    const products = await Models.productModel.findAll({ where });
+
+    return res.status(200).json({
+      message: "Product listing",
+      products
+    });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "ERROR", error });
+  }
+}
 };
