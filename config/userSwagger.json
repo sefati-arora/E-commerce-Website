@@ -1,0 +1,1340 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "project name",
+        "description": "project description",
+        "version": "1.0"
+    },
+    "produces": [
+        "application/json"
+    ],
+    "basePath": "/",
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "authorization",
+            "in": "header"
+        }
+    },
+    "paths": {
+        "/api/signUp": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-signUp-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "firstName",
+                        "in": "formData",
+                        "description": "ENTER YOUR NAME",
+                        "required": true,
+                        "type": "string",
+                        "value": "NAME"
+                    },
+                    {
+                        "name": "lastName",
+                        "in": "formData",
+                        "description": "ENTER YOUR LASTNAME",
+                        "required": true,
+                        "type": "string",
+                        "value": "LAST NAME"
+                    },
+                    {
+                        "name": "phoneNumber",
+                        "in": "formData",
+                        "description": "ENTER YOUR PHONE NUMBER",
+                        "required": true,
+                        "type": "string",
+                        "value": "PHONE NUMBER"
+                    },
+                    {
+                        "name": "countryCode",
+                        "in": "formData",
+                        "description": "ENTER COUNTRY CODE",
+                        "required": true,
+                        "type": "string",
+                        "value": "COUNTRY CODE"
+                    },
+                    {
+                        "name": "email",
+                        "in": "formData",
+                        "description": "ENTER YOUR EMAIL",
+                        "required": true,
+                        "type": "string",
+                        "value": "EMAIL"
+                    },
+                    {
+                        "name": "password",
+                        "in": "formData",
+                        "description": "ENTER YOUR PASSWORD",
+                        "required": true,
+                        "type": "string",
+                        "value": "PASSWORD"
+                    },
+                    {
+                        "name": "devicetoken",
+                        "in": "formData",
+                        "description": "ENTER DEVICE TOKEN",
+                        "required": true,
+                        "type": "string",
+                        "value": "DEVICE TOKEN"
+                    },
+                    {
+                        "name": "role",
+                        "in": "formData",
+                        "description": "ROLE HERE",
+                        "required": true,
+                        "type": "number",
+                        "value": "ROLE"
+                    },
+                    {
+                        "name": "location",
+                        "in": "formData",
+                        "description": "ENTER YOUR LOCATION",
+                        "required": true,
+                        "type": "string",
+                        "value": "LOCATION"
+                    },
+                    {
+                        "name": "latitude",
+                        "in": "formData",
+                        "description": "ENTER LATITUDE",
+                        "required": true,
+                        "type": "string",
+                        "value": "LATITUDE"
+                    },
+                    {
+                        "name": "longitude",
+                        "in": "formData",
+                        "description": "ENTER LONGITUDE",
+                        "required": true,
+                        "type": "string",
+                        "value": "LONGITUDE"
+                    },
+                    {
+                        "name": "profile",
+                        "in": "formData",
+                        "description": "Upload images",
+                        "required": false,
+                        "type": "file",
+                        "format": "binary",
+                        "maxLength": 5242880,
+                        "allowedMimeTypes": [
+                            "image/jpeg",
+                            "image/png"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "USER CREATED SUCCESSFULLY!"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/login": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-login-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "email",
+                        "in": "formData",
+                        "description": "ENTER YOUR EMAIL",
+                        "required":true,
+                        "type": "string",
+                        "value": "EMAIL"
+                    },
+                    {
+                        "name": "password",
+                        "in": "formData",
+                        "description": "ENTER YOUR PASSWORD",
+                        "required": true,
+                        "type": "string",
+                        "value": "PASSWORD"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "USER LOGIN SUCCESSFULLY!"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/logOut": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-logOut-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "devicetoken",
+                        "in": "formData",
+                        "required": true,
+                        "type": "string",
+                        "value": "DEVICE TOKEN"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "USER LOGOUT!"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/userDelete": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-userDelete-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": ""
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User ACCOUNT DELETED successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/forgetpassword": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-forgetpassword-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "email",
+                        "in": "formData",
+                        "description": "ENTER YOUR EMAIL",
+                        "required": true,
+                        "type": "string",
+                        "value": "EMAIL"
+                    },
+                    {
+                        "name": "password",
+                        "in": "formData",
+                        "description": "ENTER YOUR PASSWORD",
+                        "required": true,
+                        "type": "string",
+                        "value": "PASSWORD"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User ACCOUNT DELETED successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/changePassword": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-changePassword-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "oldpassword",
+                        "in": "formData",
+                        "description": "ENTER YOUR PASSWORD",
+                        "required": true,
+                        "type": "string",
+                        "value": "PASSWORD"
+                    },
+                    {
+                        "name": "newpassword",
+                        "in": "formData",
+                        "description": "ENTER YOUR NEW PASSWORD",
+                        "required": true,
+                        "type": "string",
+                        "value": "PASSWORD"
+                    },
+                    {
+                        "name": "confirmPassword",
+                        "in": "formData",
+                        "description": "ENTER YOUR CONFIRM PASSWORD",
+                        "required": true,
+                        "type": "string",
+                        "value": "PASSWORD"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User ACCOUNT DELETED successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/editProfile": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-changePassword-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "firstName",
+                        "in": "formData",
+                        "description": "ENTER YOUR NAME",
+                        "required": true,
+                        "type": "string",
+                        "value": "NAME"
+                    },
+                    {
+                        "name": "lastName",
+                        "in": "formData",
+                        "description": "ENTER YOUR LASTNAME",
+                        "required": true,
+                        "type": "string",
+                        "value": "LAST NAME"
+                    },
+                    {
+                        "name": "phoneNumber",
+                        "in": "formData",
+                        "description": "ENTER YOUR PHONE NUMBER",
+                        "required": true,
+                        "type": "string",
+                        "value": "PHONE NUMBER"
+                    },
+                    {
+                        "name": "countryCode",
+                        "in": "formData",
+                        "description": "ENTER COUNTRY CODE",
+                        "required": true,
+                        "type": "string",
+                        "value": "COUNTRY CODE"
+                    },
+                    {
+                        "name": "email",
+                        "in": "formData",
+                        "description": "ENTER YOUR EMAIL",
+                        "required": true,
+                        "type": "string",
+                        "value": "EMAIL"
+                    },
+                    {
+                        "name": "devicetoken",
+                        "in": "formData",
+                        "description": "ENTER DEVICE TOKEN",
+                        "required": true,
+                        "type": "string",
+                        "value": "DEVICE TOKEN"
+                    },
+                    {
+                        "name": "role",
+                        "in": "formData",
+                        "description": "ROLE HERE",
+                        "required": true,
+                        "type": "number",
+                        "value": "ROLE"
+                    },
+                    {
+                        "name": "location",
+                        "in": "formData",
+                        "description": "ENTER YOUR LOCATION",
+                        "required":true,
+                        "type": "string",
+                        "value": "LOCATION"
+                    },
+                    {
+                        "name": "latitude",
+                        "in": "formData",
+                        "description": "ENTER LATITUDE",
+                        "required":true,
+                        "type": "string",
+                        "value": "LATITUDE"
+                    },
+                    {
+                        "name": "longitude",
+                        "in": "formData",
+                        "description": "ENTER LONGITUDE",
+                        "required": true,
+                        "type": "string",
+                        "value": "LONGITUDE"
+                    },
+                    {
+                        "name": "profile",
+                        "in": "formData",
+                        "description": "Upload images",
+                        "required": false,
+                        "type": "file",
+                        "format": "binary",
+                        "maxLength": 5242880,
+                        "allowedMimeTypes": [
+                            "image/jpeg",
+                            "image/png"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User PROFILE UPDATE SUCCESSFULLY!"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/address": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-address-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "country",
+                        "in": "formData",
+                        "description": "ENTER YOUR COUNTRY",
+                        "required":true,
+                        "type": "string",
+                        "value": "COUNTRY"
+                    },
+                    {
+                        "name": "state",
+                        "in": "formData",
+                        "description": "ENTER YOUR STATE",
+                        "required": true,
+                        "type": "string",
+                        "value": "STATE"
+                    },
+                    {
+                        "name": "city",
+                        "in": "formData",
+                        "description": "ENTER YOUR CITY",
+                        "required": true,
+                        "type": "string",
+                        "value": "CITY"
+                    },
+                    {
+                        "name": "hnumber",
+                        "in": "formData",
+                        "description": "ENTER YOUR HOUSE NUMBER",
+                        "required":true,
+                        "type": "string",
+                        "value": "HOUSE NUMBER"
+                    },
+                      {
+                        "name": "location",
+                        "in": "formData",
+                        "description": "ENTER LOCATION",
+                        "required":true,
+                        "type": "string",
+                        "value": "LOCATION"
+                    },
+                    {
+                        "name": "latitude",
+                        "in": "formData",
+                        "description": "ENTER LATITUDE",
+                        "required":true,
+                        "type": "string",
+                        "value": "LATITUDE"
+                    },
+                    {
+                        "name": "longitude",
+                        "in": "formData",
+                        "description": "ENTER LONGITUDE",
+                        "required":true,
+                        "type": "string",
+                        "value": "LONGITUDE"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ADDRESS ENTER SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/editAddress": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-editAddress-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "addressId",
+                        "in": "formData",
+                        "description": "ENTER YOUR addressId",
+                        "required": true,
+                        "type": "string",
+                        "value": "addressId"
+                    },
+                    {
+                        "name": "country",
+                        "in": "formData",
+                        "description": "ENTER YOUR COUNTRY",
+                        "required": true,
+                        "type": "string",
+                        "value": "COUNTRY"
+                    },
+                    {
+                        "name": "state",
+                        "in": "formData",
+                        "description": "ENTER YOUR STATE",
+                        "required":true,
+                        "type": "string",
+                        "value": "STATE"
+                    },
+                    {
+                        "name": "city",
+                        "in": "formData",
+                        "description": "ENTER YOUR CITY",
+                        "required":true,
+                        "type": "string",
+                        "value": "CITY"
+                    },
+                    {
+                        "name": "hnumber",
+                        "in": "formData",
+                        "description": "ENTER YOUR HOUSE NUMBER",
+                        "required": true,
+                        "type": "string",
+                        "value": "HOUSE NUMBER"
+                    },
+                    {
+                        "name": "latitude",
+                        "in": "formData",
+                        "description": "ENTER LATITUDE",
+                        "required":true,
+                        "type": "string",
+                        "value": "LATITUDE"
+                    },
+                    {
+                        "name": "longitude",
+                        "in": "formData",
+                        "description": "ENTER LONGITUDE",
+                        "required": true,
+                        "type": "string",
+                        "value": "LONGITUDE"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ADDRESS UPDATED SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/deleteAddress": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-deleteAddress-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "addressId",
+                        "in": "formData",
+                        "description": "ENTER ADDRESS ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "ADDRESS ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ADDRESS DELETED SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/cartData": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-cartData-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "productId",
+                        "in": "formData",
+                        "description": "ENTER PRODUCT ID",
+                        "type": "string",
+                        "required": true,
+                        "value": "PRODUCT ID"
+                    },
+                    {
+                        "name": "Quantity",
+                        "in": "formData",
+                        "description": "ENTER QUANTITY",
+                        "type": "string",
+                        "required": true,
+                        "value": "QUANTITY!"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CART DATA ENTER SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/cartDataDeleted": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-cartDataDeleted-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "cartId",
+                        "in": "formData",
+                        "description": "ENTER CART ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "CART ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CART DATA DELETED SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/getproduct": {
+            "get": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-getproduct-get",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "productId",
+                        "in": "formData",
+                        "description": "ENTER PRODUCT ID",
+                        "type": "string",
+                        "required": true,
+                        "value": "PRODUCT ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PRODUCT DATA GET SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/addressDefault": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-addressDefault-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "addressId",
+                        "in": "formData",
+                        "description": "ENTER ADDRESS ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "ADDRESS ID"
+                    },
+                    {
+                        "name": "isDefault",
+                        "in": "formData",
+                        "description": "IS DEFAULT",
+                        "required": true,
+                        "type": "string",
+                        "value": "IS DEFAULT"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ADDRESS DEFAULT SET  SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/subscriptionBuy": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-subscriptionBuy-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "formData",
+                        "description": "ENTER SUBSCRIPTION ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "ADDRESS ID"
+                    },
+                    {
+                        "name": "subscriptionType",
+                        "in": "formData",
+                        "description": "ENTER TYPE OF YOUR SUBSCRIPTION",
+                        "required": true,
+                        "type": "string",
+                        "value": "SUBSCRIPTION!"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SUBSCRIPTION BUY SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/AddCartItem": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-AddCartItem-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "cartId",
+                        "in": "formData",
+                        "description": "ENTER CART ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "CART ID"
+                    },
+                    {
+                        "name": "productId",
+                        "in": "formData",
+                        "description": "ENTER PRODUCT ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "PRODUCT ID"
+                    },
+                    {
+                        "name": "Quantity",
+                        "in": "formData",
+                        "description": "ENTER Quantity",
+                        "required":true,
+                        "type": "string",
+                        "value": "Quantity"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ADD CART ITEM  SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/UpdateCart": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-UpdateCart-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "cartId",
+                        "in": "formData",
+                        "description": "ENTER CART ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "CART ID"
+                    },
+                    {
+                        "name": "Quantity",
+                        "in": "formData",
+                        "description": "ENTER Quantity",
+                        "required":true,
+                        "type": "string",
+                        "value": "Quantity"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": " UPDATE CART ITEM SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/DeleteCart": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-DeleteCart-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "cartItemId",
+                        "in": "formData",
+                        "description": "ENTER CARTITEM ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "CART ITEM ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CART DATA DELETED SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/orderList": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-orderList-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": ""
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ORDER LIST GET SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/orderDetails": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-orderDetails-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "orderId",
+                        "in": "formData",
+                        "description": "ENTER ORDER ID",
+                        "required":true,
+                        "type": "string",
+                        "value": "ORDER ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ORDER DETAILS GET SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/driverlist": {
+            "get": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-driverlist-get",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": ""
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DRIVER LIST FOUND SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/orderAssign": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-orderAssign-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "orderId",
+                        "in": "formData",
+                        "description": "ENTER YOUR ORDER ID",
+                        "required":true,
+                        "type": "string",
+                        "value": "orderId"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DRIVER LIST FOUND SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/createStore": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-createStore-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "productId",
+                        "in": "formData",
+                        "description": "ENTER PRODUCT ID",
+                        "required":true,
+                        "type": "string",
+                        "value": "PRODUCT ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "STORE CREATED SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/StoreProduct": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-StoreProduct-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": ""
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "STORE PRODUCT GET SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/productReview": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-productReview-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "productId",
+                        "in": "formData",
+                        "description": "ENTER PRODUCT ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "PRODUCT ID"
+                    },
+                    {
+                        "name": "message",
+                        "in": "formData",
+                        "description": "ENTER MESSEAGE ",
+                        "required": true,
+                        "type": "string",
+                        "value": "MESSAGE"
+                    },
+                    {
+                        "name": "file",
+                        "in": "formData",
+                        "description": "Upload images",
+                        "required": false,
+                        "type": "file",
+                        "format": "binary",
+                        "maxLength": 5242880,
+                        "allowedMimeTypes": [
+                            "image/jpeg",
+                            "image/png"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PRODUCT REVIEW ENTER SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/createLike":
+        {
+          "post":{
+             "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-createLike-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                   {
+                        "name": "ReviewId",
+                        "in": "formData",
+                        "description": "ENTER REVIEW ID",
+                        "required":true,
+                        "type": "string",
+                        "value": "PRODUCT ID"
+                    }
+                ],
+                 "responses": {
+                    "200": {
+                        "description": "LIKES ON PRODUCT REVIEW ENTER SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+          }
+        },
+        "/api/countLikes":
+        {
+            "post":{
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-countLikes-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                      "name":"ReviewId",
+                      "in":"formData",
+                      "description":"ENTER REVIEW ID",
+                      "type":"string",
+                      "required":true,
+                      "value":"REVIEW ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "COUNT LIKES ON PRODUCT REVIEW ENTER SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/productListing":
+        { 
+            "get":{
+                   "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-productListing-get",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                       "name":""
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "GET PRODUCT LISTING SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/paymentCreateCOD":
+        { 
+           "get":{
+              "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-paymentCreateCOD-get",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                   {
+                        "name": "productId",
+                        "in": "formData",
+                        "description": "ENTER PRODUCT ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "PRODUCT ID"
+                    },
+                     {
+                       "name":"currency",
+                       "in":"formData",
+                       "description":"ENTER CURRENCY",
+                       "type":"string",
+                       "required":true,
+                       "value":"CURRENCY!"
+                    },
+                     {
+                       "name":"Amount",
+                       "in":"formData",
+                       "description":"ENTER AMOUNT",
+                       "type":"string",
+                       "required":true,
+                       "value":"AMOUNT"
+                    }
+                ],
+                 "responses": {
+                    "200": {
+                        "description": "CREATE COD PAYMENT SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+           }
+        },
+        "/api/checkout":
+        {
+          "post":{
+             "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-checkout-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name":"addressId",
+                        "in":"formData",
+                        "description":"ENTER ADDRESS ID",
+                        "required":true,
+                        "type":"string",
+                        "value":"ADDRESS ID"
+                    },
+                    {
+                        "name":"productId",
+                        "in":"formData",
+                        "description":"ENTER PRODUCT ID",
+                        "required":true,
+                        "type":"string",
+                        "value":"PRODUCT ID"
+                    },
+                    {
+                        "name":"storeId",
+                        "in":"formData",
+                        "description":"ENTER STORE ID",
+                        "required":true,
+                        "type":"string",
+                        "value":"STORE ID"
+                    },
+                    {
+                        "name":"assignDriverId",
+                        "in":"formData",
+                        "description":"ASSIGN DRIVER ID",
+                        "required":true,
+                        "type":"string",
+                        "value":"DRIVER ID"
+                    },
+                    {
+                        "name":"Quantity",
+                        "in":"formData",
+                        "description":"ENTER QUANTITY",
+                        "required":true,
+                        "type":"string",
+                        "value":"QUANTITY!"
+                    },
+                     {
+                        "name":"price",
+                        "in":"formData",
+                        "description":"ENTER PRICE",
+                        "required":true,
+                        "type":"string",
+                        "value":"PRICE"
+                    },
+                     {
+                        "name":"cartId",
+                        "in":"formData",
+                        "description":"ENTER CARTID",
+                        "required":true,
+                        "type":"string",
+                        "value":"CARTID"
+                    }
+                ],
+                 "responses": {
+                    "200": {
+                        "description": "CHECKOUT SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+          }
+        },
+        "definitions": {}
+    }
+}

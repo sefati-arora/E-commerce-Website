@@ -5,7 +5,10 @@ const jwt = require("jsonwebtoken");
 const helper = require("../helper/validation");
 const commonhelper = require("../helper/commonHelper");
 const argon2 = require("argon2");
+const stripe = require("stripe")(process.env.STRIPE_SK);
 const { Op, literal } = require("sequelize");
+const axios = require("axios");
+const PDFDocument = require("pdfkit");
 const otpManager = require("node-twillo-otp-manager")(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN,
@@ -71,9 +74,13 @@ module.exports = {
         role,
         locationFrom,
         latitude,
-        longitude,
+        longitude
       } = payload;
       const hashpassword = await argon2.hash(password);
+      const customer = await stripe.customers.create({
+        description: "anything",
+        email: payload.email,
+      });
       const file = req.files?.profile;
       if (!file) {
         return res.status(400).json({ message: "Profile image is required" });
@@ -94,6 +101,7 @@ module.exports = {
         locationFrom,
         latitude,
         longitude,
+        customerId: customer.id
       });
       if (user) {
         const phone = payload.countryCode + payload.phoneNumber;
@@ -117,9 +125,14 @@ module.exports = {
       const payload = await helper.validationJoi(req.body, schema);
       const { email, password } = payload;
       const hashpassword = await argon2.hash(password);
+        const customer = await stripe.customers.create({
+        description: "anything",
+        email: payload.email,
+      });
       const user = await Models.userModel.create({
         email,
         password: hashpassword,
+        customerId:customer.id
       });
       const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY);
       return res.status(200).json({ message: "USER LOGIN", user, token });
@@ -191,6 +204,8 @@ module.exports = {
   },
   changePassword: async (req, res) => {
     try {
+        const userId = req.user.id;
+         console.log("userId:",userId) 
       const schema = Joi.object({
         oldpassword: Joi.string().required(),
         newpassword: Joi.string().min(6).required(),
@@ -198,11 +213,11 @@ module.exports = {
       });
       const payload = await helper.validationJoi(req.body, schema);
       const { oldpassword, newpassword } = payload;
-      const id = req.user.id;
-      const user = await Models.userModel.findOne({ where: { id } });
+      const user = await Models.userModel.findOne({ where: { id:userId } });
       if (!user) {
         return res.status(404).json({ message: "USER NOT FOUND!" });
       }
+      console.log("userId:",userId)
       console.log("hash", user.password);
       console.log(">>>>", oldpassword);
       const validpassword = await argon2.verify(
@@ -220,7 +235,7 @@ module.exports = {
       });
       const existuser = await Models.userModel.update(
         { password: hashedPassword },
-        { where: { id: id } }
+        { where: { id:userId } }
       );
       return res.status(200).json({ message: "PASSWORD CHANGED!", existuser });
     } catch (error) {
@@ -238,7 +253,6 @@ module.exports = {
         phoneNumber,
         countryCode,
         email,
-        profile,
         role,
         isOnline,
         isorderassign,
@@ -262,7 +276,7 @@ module.exports = {
           phoneNumber,
           countryCode,
           email,
-          profile,
+          profile:profilepath,
           role,
           isOnline,
           isorderassign,
@@ -295,12 +309,14 @@ module.exports = {
   },
   address: async (req, res) => {
     try {
-      const userId = req.user.id.trim();
+      const userId = req.user.id;
+       console.log("userId",userId)
       const schema = Joi.object({
         country: Joi.string().required(),
         state: Joi.string().required(),
         city: Joi.string().required(),
         hnumber: Joi.string().required(),
+        location:Joi.string().required(),
         latitude: Joi.string().required(),
         longitude: Joi.string().required(),
       });
@@ -309,13 +325,14 @@ module.exports = {
       if (!users) {
         return res.status(404).json({ message: "USER NOT FOUND" });
       }
-
+       console.log("userId",userId)
       const user = await Models.addressModel.create({
         userId,
         country: payload.country,
         state: payload.state,
         city: payload.city,
         hnumber: payload.hnumber,
+        location:payload.location,
         latitude: payload.latitude,
         longitude: payload.longitude,
       });
@@ -437,68 +454,10 @@ module.exports = {
       return res.status(500).json({ message: "ERROR" });
     }
   },
-  subscriptionCreate: async (req, res) => {
-    try {
-      const schema = Joi.object({
-        title: Joi.string().required(),
-        subscriptionType: Joi.string().required(),
-        Amount: Joi.string().required(),
-        description: Joi.string().required(),
-      });
-      const payload = await helper.validationJoi(req.body, schema);
-      const { title, subscriptionType, Amount, description } = payload;
-      const user = await Models.subscriptionModel.create({
-        title,
-        subscriptionType,
-        Amount,
-        description,
-      });
-      return res.status(200).json({ message: "SUBSCRIPTION CREATED!", user });
-    } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: "error", error });
-    }
-  },
-  subscriptionEdit: async (req, res) => {
-    try {
-      const { subscriptionId, title, subscriptionType, Amount, description } =
-        req.body;
-      const sub = await Models.subscriptionModel.findOne({
-        where: { id: subscriptionId },
-      });
-      if (!sub) {
-        return res.status(404).json({ message: "SUBSCRIPTION NOT FOUND!" });
-      }
-      await Models.subscriptionModel.update(
-        { title, subscriptionType, Amount, description },
-        { where: { id: subscriptionId } }
-      );
-      return res.status(200).json({ message: "SUBSCRIPTION UPDATED!" });
-    } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: "ERROR", error });
-    }
-  },
-  subscriptionDelete: async (req, res) => {
-    try {
-      const { subscriptionId } = req.body;
-      const sub = await Models.subscriptionModel.findOne({
-        where: { id: subscriptionId },
-      });
-      if (!sub) {
-        return res.status(404).json({ message: "SUBSCRIPTION NOT FOUND!" });
-      }
-      await Models.subscriptionModel.destroy({ where: { id: subscriptionId } });
-      return res.status(200).json({ message: "SUBSCRIPTION ID DELETED!" });
-    } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: "ERROR", error });
-    }
-  },
   subscriptionBuy: async (req, res) => {
     try {
       const userId = req.user.id;
-      const { subscriptionId } = req.body;
+      const { subscriptionId ,subscriptionType} = req.body;
       const subscriptionBuy = await Models.subscriptionModel.findOne({
         where: { id: subscriptionId },
       });
@@ -517,6 +476,7 @@ module.exports = {
       const sub = await Models.subscriptionBuyModel.create({
         userId,
         subscriptionId,
+        subscriptionType,
         startDate: startDate,
         EndDate: EndDate,
       });
@@ -527,80 +487,100 @@ module.exports = {
     }
   },
   AddCartItem: async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const { productId, Quantity } = req.body;
-      if (!productId || !Quantity) {
-        return res
-          .status(404)
-          .json({ message: "prodctId and quantity not found!" });
-      }
-      let user = await Models.cartManageModel.findOne({ where: { userId } });
-      if (!user) {
-        user = await Models.cartManageModel.create({
-          userId,
-        });
-      }
-      const existuser = await Models.cartModel.findOne({
-        where: { cartId: user.id, productId },
+  try {
+    const userId = req.user.id;
+    const { productId, Quantity } = req.body;
+    if (!productId || !Quantity) {
+      return res.status(400).json({
+        message: "productId and quantity are required!"
       });
-      if (existuser) {
-        existuser.Quantity += Number(Quantity);
-        await existuser.save();
-      } else {
-        await Models.cartModel.create({
-          cartId: user.id,
-          productId,
-          Quantity,
-        });
-      }
-      const cartData = await Models.cartManageModel.findOne({
-        where: { id: user.id },
-        include: [
-          {
-            model: Models.cartModel,
-            include: [
-              {
-                model: Models.productModel,
-              },
-            ],
-          },
-        ],
-      });
-      return res
-        .status(200)
-        .json({ message: "CART CREATED", existuser, cartData });
-    } catch (error) {
-      console.log(error);
-      return res.status(500).json({ message: "ERROR", error });
     }
-  },
-  UpdateCart: async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const { cartItemId, Quantity } = req.body;
-      const userCart = await Models.cartManageModel.findOne({
-        where: { userId },
-      });
-      if (!userCart) {
-        return res.status(404).json({ message: "USER NOT FOUND!" });
-      }
-      const cartItem = await Models.cartModel.findOne({
-        where: { cartId: userCart.id, id: cartItemId },
-      });
-      if (!cartItem) {
-        return res.status(404).json({ message: "CART ITEM NOT FOUND!" });
-      }
-      const updatedRows = await Models.cartModel.update(
-        { Quantity },
-        { where: { cartId: userCart.id, id: cartItemId } }
-      );
-      return res.status(200).json({ message: "CART UPDATED!", updatedRows });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: "ERROR", error });
+    let cart = await Models.cartManageModel.findOne({ where: { userId } });
+    if (!cart) {
+      cart = await Models.cartManageModel.create({ userId });
     }
-  },
+    let cartItem = await Models.cartModel.findOne({
+      where: { cartId: cart.id, productId },
+    });
+
+    if (cartItem) {
+      cartItem.Quantity += Number(Quantity);
+      await cartItem.save();
+    } else {
+      cartItem = await Models.cartModel.create({
+        cartId: cart.id,
+        productId,
+        Quantity,
+      });
+    }
+    const cartData = await Models.cartManageModel.findOne({
+      where: { id: cart.id },
+      include: [
+        {
+          model: Models.cartModel,
+          include: [
+            {
+              model: Models.productModel,
+            },
+          ],
+        },
+      ],
+    });
+
+    return res.status(200).json({
+      message: "Cart updated successfully",
+      cartItem,
+      cartData,
+    });
+  } catch (error) {
+    console.error("AddCartItem Error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+},
+UpdateCart: async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { cartId, Quantity } = req.body;
+
+    // if (!cartItemId || !Quantity) {
+    //   return res.status(400).json({
+    //     message: "cartItemId and Quantity are required",
+    //   });
+    // }
+
+    const userCart = await Models.cartManageModel.findOne({
+      where: { userId },
+    });
+
+    if (!userCart) {
+      return res.status(404).json({ message: "USER CART NOT FOUND!" });
+    }
+    const cartItem = await Models.cartModel.findOne({
+      where: { id: cartId},
+    });
+   console.log("USER:", userId);
+console.log("USER CART ID:", userCart?.id);
+
+
+    if (!cartItem) {
+      return res.status(404).json({ message: "CART ITEM NOT FOUND!" });
+    }
+    cartItem.Quantity = Quantity;
+    await cartItem.save();
+    return res.status(200).json({
+      message: "CART UPDATED!",
+      updatedItem: cartItem,
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "ERROR", error: error.message });
+  }
+},
+
   DeleteCart: async (req, res) => {
     try {
       const { cartItemId } = req.body;
@@ -966,12 +946,15 @@ ${productDetails}
   },
   driverlist: async (req, res) => {
     try {
-      const drivers = await Models.userModel.findAll({
+      const userId=req.user.id
+      const drivers = await Models.userModel.findOne({
         where: {
+          id:userId,
           isOnline: 1,
           isorderassign: 0,
         },
       });
+      console.log(">>>>",drivers)
       return res
         .status(200)
         .json({ message: "DRIVER AVAILABLE ARE:", drivers });
@@ -1132,6 +1115,213 @@ productListing: async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "ERROR", error });
+  }
+},
+paymentCreateCOD :async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { productId, currency, Amount } = req.body;
+
+    if (!productId || !Amount || !currency) {
+      return res.status(400).json({ message: "productId, Amount, and currency are required" });
+    }
+
+    const payment = await Models.transationModel.create({
+      userId,
+      productId,
+      currency,
+      Amount,
+      paymentStatus: 0,   // pending
+      paymentMethod: 0    // COD
+    });
+       const notification= await Models.notificationModel.create({
+        receiverId:userId,
+         title:"pay your amount after order delievered!",
+         description:"PAYEMENT MADE COD"
+      })
+    return res.status(200).json({ message: "COD Order Created!", payment,notification});
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "ERROR", error });
+  }
+},
+createstripe:async(req,res)=>
+{
+  try
+  {
+    let response=
+    {
+      SK: process.env.STRIPE_SK,
+        PK: process.env.STRIPE_PK,
+    }
+    return res.status(200).json({message:"STRIPE DATA",response})
+  }
+  catch(error)
+  {
+    console.log(error)
+    return res.status(500).json({message:"ERROR",error})
+  }
+},
+ createCard: async (req, res) => {
+    try {
+      const response = await commonhelper.createcard(
+        req.user.customerId,
+        req.body.cardToken
+      );
+      if (!response) {
+        return res.status(404).json({ message: "ERROR IN CREATION" });
+      }
+      return res.status(200).json({ message: "CREATE CARD", response });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR!" });
+    }
+  },
+getToken:async(req,res)=>
+{
+  try
+  {
+      const token={id:"tok_visa"};
+      console.log("TEST CARD",token.id);
+      return res.status(200).json({message:"TOKEN",token})
+  }
+  catch(error)
+  {
+    console.log(error)
+    return res.status(500).json({message:"ERROR"})
+  }
+},
+cardList:async(req,res)=>
+{
+  try
+  { 
+    const paymentMethods=await stripe.paymentMethods.list({
+      customer:req.user.customerId,
+      type:"card"
+    });
+    const customer=await stripe.customers.retrieve(req.user.customerId);
+    const defaultpaymentMethodId=customer.invoice_settings.default_payment_method;
+     console.log("defaultpayment",defaultpaymentMethodId);
+     const cardsWithDefaultFlag = paymentMethods.data.map((card) => {
+        const isDefault = card.id === defaultpaymentMethodId;
+        console.log(`Card ID: ${card.id}, Is Default: ${isDefault}`);
+        return {
+          ...card,
+          isDefault,
+        };
+      });
+      return res.status(200).json({message:"CARD LIST:",cardsWithDefaultFlag})
+  }
+  catch(error)
+  {
+    console.log(error)
+    return res.status(500).json({message:"ERROR",error})
+  }
+},
+createPayment:async(req,res) =>
+{
+  try
+  {
+     const{amount,cardId}=req.body;
+     const response=await stripe.paymentIntents.create({
+      amount:parseInt((amount*100)),
+      currency:"usd",
+      customer: req.user.customerId,
+        payment_method: cardId,
+        confirm: true,
+        return_url: "http://localhost:3000/users/cmcUser",
+     })
+     return res.status("200").json({message:"PAYMENT CREATE",response})
+  }
+  catch(error)
+  {
+    console.log(error)
+    return res.status(500).json({message:"ERROR",error})
+  }
+},
+stripeIntent: async (req, res) => {
+    try {
+      console.log(">>>",req.body)
+      let userDetail = await Models.userModel.findOne({
+        where: { id: req.user.id },
+      });
+      const stripeCustomerId = userDetail.customerId;
+      const ephemeralKey = await stripe.ephemeralKeys.create(
+        {
+          customer: stripeCustomerId,
+        },
+        { apiVersion: "2023-10-16" }
+      );
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: parseInt(req.body.amount) * 100,
+        currency: "usd",
+        customer: stripeCustomerId,
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+       let result = {
+        paymentIntent: paymentIntent.client_secret,
+
+        ephemeralKey: ephemeralKey.secret,
+
+        customer: userDetail.customerId,
+
+        publishableKey: process.env.STRIPE_PK,
+
+        transactionId: paymentIntent.id,
+      };
+      const{orderId}=req.body;
+      let orderDetails=await Models.orderModel.findOne({id:orderId},{where:{id:orderId}})
+      let objectToSave={
+        userId: req.user.id,
+        orderId:orderDetails,
+         amount: req.body.amount,
+
+        chargeAmount: req.body.chargeAmount,
+
+        transactionId: paymentIntent.id,
+
+        description: `You received ${parseInt(req.body.amount)} $`,
+      }
+
+       await Models.transationModel.create(objectToSave);
+      return res.status(200).json({ message: "DATA INTENT", result });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR" });
+    }
+  },
+generatePdfFromApi:async (req, res) => {
+  try {
+    // 1️⃣ Fetch data from 3rd-party API
+    const apiResponse = await axios.get("https://jsonplaceholder.typicode.com/users");
+    const users = apiResponse.data; // example data
+
+    // 2️⃣ Create PDF
+    const doc = new PDFDocument();
+
+    // Set response headers
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "attachment; filename=users.pdf");
+
+    // Pipe PDF to response
+    doc.pipe(res);
+
+    // Add PDF content
+    doc.fontSize(20).text("Users Report", { align: "center" });
+    doc.moveDown();
+
+    users.forEach((user, index) => {
+      doc.fontSize(12).text(`${index + 1}. ${user.name} - ${user.email}`);
+    });
+
+    // Finalize PDF
+    doc.end();
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Failed to generate PDF");
   }
 }
 };

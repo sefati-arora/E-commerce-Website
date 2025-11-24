@@ -1,0 +1,480 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "project name",
+        "description": "project description",
+        "version": "1.0"
+    },
+    "produces": [
+        "application/json"
+    ],
+    "basePath": "/",
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "authorization",
+            "in": "header"
+        }
+    },
+    "paths": {
+        "/api/category": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-category-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "title",
+                        "in": "formData",
+                        "description": "ENTER TITLE",
+                        "required": true,
+                        "type": "string",
+                        "value": "TITLE"
+                    },
+                    {
+                        "name": "categoryImage",
+                        "in": "formData",
+                        "description": "Upload images",
+                        "required": false,
+                        "type": "file",
+                        "format": "binary",
+                        "maxLength": 5242880,
+                        "allowedMimeTypes": [
+                            "image/jpeg",
+                            "image/png"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ENTER PRODUCT CATEGORY SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/editCategory": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-editCategory-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "categoryId",
+                        "in": "formData",
+                        "description": "ENTER CATEGORY ID",
+                        "type": "string",
+                        "required": true,
+                        "value": "CATEGORY ID"
+                    },
+                    {
+                        "name": "title",
+                        "in": "formData",
+                        "description": "ENTER TITLE",
+                        "required": true,
+                        "type": "string",
+                        "value": "TITLE"
+                    },
+                    {
+                        "name": "categoryImage",
+                        "in": "formData",
+                        "description": "Upload images",
+                        "required": false,
+                        "type": "file",
+                        "format": "binary",
+                        "maxLength": 5242880,
+                        "allowedMimeTypes": [
+                            "image/jpeg",
+                            "image/png"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "EDIT CATEGORY SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/deleteCategory": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-deleteCategory-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "categoryId",
+                        "in": "formData",
+                        "description": "ENTER CATEGORY ID",
+                        "type": "string",
+                        "required": true,
+                        "value": "CATEGORY ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": " CATEGORY DELETED SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/productAdded": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-productAdded-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "categoryId",
+                        "in": "formData",
+                        "description": "ENTER CATEGORY ID",
+                        "type": "string",
+                        "required": true,
+                        "value": "CATEGORY ID"
+                    },
+                    {
+                        "name": "title",
+                        "in": "formData",
+                        "description": "ENTER TITLE",
+                        "required": true,
+                        "type": "string",
+                        "value": "TITLE"
+                    },
+                    {
+                        "name": "description",
+                        "in": "formData",
+                        "description": "ENTER DESCRIPTION",
+                        "required": true,
+                        "type": "string",
+                        "value": "DESCRIPTION"
+                    },
+                    {
+                        "name": "price",
+                        "in": "formData",
+                        "description": "ENTER PRICE",
+                        "required": true,
+                        "type": "string",
+                        "value": "PRICE"
+                    },
+                    {
+                        "name": "offer",
+                        "in": "formData",
+                        "description": "ENTER OFFER",
+                        "required": true,
+                        "type": "number",
+                        "value": "OFFER"
+                    },
+                    {
+                        "name": "file",
+                        "in": "formData",
+                        "description": "Upload images",
+                        "required": false,
+                        "type": "file",
+                        "format": "binary",
+                        "maxLength": 5242880,
+                        "allowedMimeTypes": [
+                            "image/jpeg",
+                            "image/png"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": " PRODUCT ADDED SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/productEdit": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-productEdit-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "productId",
+                        "in": "formData",
+                        "description": "ENTER PRODUCT ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "PRODUCT ID"
+                    },
+                    {
+                        "name": "categoryId",
+                        "in": "formData",
+                        "description": "ENTER CATEGORY ID",
+                        "type": "string",
+                        "required": true,
+                        "value": "CATEGORY ID"
+                    },
+                    {
+                        "name": "title",
+                        "in": "formData",
+                        "description": "ENTER TITLE",
+                        "required": true,
+                        "type": "string",
+                        "value": "TITLE"
+                    },
+                    {
+                        "name": "description",
+                        "in": "formData",
+                        "description": "ENTER DESCRIPTION",
+                        "required": true,
+                        "type": "string",
+                        "value": "DESCRIPTION"
+                    },
+                    {
+                        "name": "price",
+                        "in": "formData",
+                        "description": "ENTER PRICE",
+                        "required": true,
+                        "type": "string",
+                        "value": "PRICE"
+                    },
+                    {
+                        "name": "offer",
+                        "in": "formData",
+                        "description": "ENTER OFFER",
+                        "required": true,
+                        "type": "number",
+                        "value": "OFFER"
+                    },
+                    {
+                        "name": "file",
+                        "in": "formData",
+                        "description": "Upload images",
+                        "required": false,
+                        "type": "file",
+                        "format": "binary",
+                        "maxLength": 5242880,
+                        "allowedMimeTypes": [
+                            "image/jpeg",
+                            "image/png"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": " PRODUCT LIST EDIT  SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/deleteProduct": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-deleteProduct-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "productId",
+                        "in": "formData",
+                        "description": "ENTER PRODUCT ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "PRODUCT ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": " PRODUCT LIST DELETED SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/subscriptionCreate": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-subscriptionCreate-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "title",
+                        "in": "formData",
+                        "description": "ENTER TITLE OF SUBSCRIPTION",
+                        "type": "string",
+                        "required": true,
+                        "value": "TITLE"
+                    },
+                    {
+                        "name": "subscriptionType",
+                        "in": "formData",
+                        "description": "ENTER SUBSCRIPTION TYPE",
+                        "type": "string",
+                        "required": true,
+                        "value": "SUBSCRIPTION TYPE"
+                    },
+                    {
+                        "name": "Amount",
+                        "in": "formData",
+                        "description": "ENTER AMOUNT",
+                        "type": "string",
+                        "required": true,
+                        "value": "AMOUNT"
+                    },
+                    {
+                        "name": "description",
+                        "in": "formData",
+                        "description": "ENTER DESCRIPTION",
+                        "required": true,
+                        "type": "string",
+                        "value": "DESCRIPTION"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": " SUBSCRIPTION CREATED SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/subscriptionEdit": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-subscriptionEdit-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "formData",
+                        "description": "ENTER SUBSCRIPTION ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "SUBSCRIPTION ID"
+                    },
+                    {
+                        "name": "title",
+                        "in": "formData",
+                        "description": "ENTER TITLE OF SUBSCRIPTION",
+                        "type": "string",
+                        "required": true,
+                        "value": "TITLE"
+                    },
+                    {
+                        "name": "subscriptionType",
+                        "in": "formData",
+                        "description": "ENTER SUBSCRIPTION TYPE",
+                        "type": "string",
+                        "required": true,
+                        "value": "SUBSCRIPTION TYPE"
+                    },
+                    {
+                        "name": "Amount",
+                        "in": "formData",
+                        "description": "ENTER AMOUNT",
+                        "type": "string",
+                        "required": true,
+                        "value": "AMOUNT"
+                    },
+                    {
+                        "name": "description",
+                        "in": "formData",
+                        "description": "ENTER DESCRIPTION",
+                        "required": true,
+                        "type": "string",
+                        "value": "DESCRIPTION"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": " SUBSCRIPTION LIST EDIT SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/subscriptionDelete": {
+            "post": {
+                "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-subscriptionDelete-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "subscriptionId",
+                        "in": "formData",
+                        "description": "ENTER SUBSCRIPTION ID",
+                        "required": true,
+                        "type": "string",
+                        "value": "SUBSCRIPTION ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": " SUBSCRIPTION DELETED SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "definitions": {}
+    }
+}

@@ -43,7 +43,16 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
                 type:DataTypes.INTEGER,
                 allowNull:true,
                 defaultValue:0  //0 for pending 1 for success
+            },
+            paymentMethod:
+            {
+                type:DataTypes.INTEGER,
+                allowNull:true,
+                defaultValue:0   //0 FOR COD AND 1 FOR ONLINE
             }
+        },
+        {
+            tableName:"transactionTable"
         }
     )
 }

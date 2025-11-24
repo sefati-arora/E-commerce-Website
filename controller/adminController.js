@@ -155,4 +155,62 @@ module.exports = {
       return res.status(500).json({ message: "ERROR", error });
     }
   },
+  subscriptionCreate: async (req, res) => {
+      try {
+        const schema = Joi.object({
+          title: Joi.string().required(),
+          subscriptionType: Joi.string().required(),
+          Amount: Joi.string().required(),
+          description: Joi.string().required(),
+        });
+        const payload = await helper.validationJoi(req.body, schema);
+        const { title, subscriptionType, Amount, description } = payload;
+        const user = await Models.subscriptionModel.create({
+          title,
+          subscriptionType,
+          Amount,
+          description,
+        });
+        return res.status(200).json({ message: "SUBSCRIPTION CREATED!", user });
+      } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "error", error });
+      }
+    },
+    subscriptionEdit: async (req, res) => {
+      try {
+        const { subscriptionId, title, subscriptionType, Amount, description } =
+          req.body;
+        const sub = await Models.subscriptionModel.findOne({
+          where: { id: subscriptionId },
+        });
+        if (!sub) {
+          return res.status(404).json({ message: "SUBSCRIPTION NOT FOUND!" });
+        }
+        await Models.subscriptionModel.update(
+          { title, subscriptionType, Amount, description },
+          { where: { id: subscriptionId } }
+        );
+        return res.status(200).json({ message: "SUBSCRIPTION UPDATED!" });
+      } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "ERROR", error });
+      }
+    },
+    subscriptionDelete: async (req, res) => {
+      try {
+        const { subscriptionId } = req.body;
+        const sub = await Models.subscriptionModel.findOne({
+          where: { id: subscriptionId },
+        });
+        if (!sub) {
+          return res.status(404).json({ message: "SUBSCRIPTION NOT FOUND!" });
+        }
+        await Models.subscriptionModel.destroy({ where: { id: subscriptionId } });
+        return res.status(200).json({ message: "SUBSCRIPTION ID DELETED!" });
+      } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "ERROR", error });
+      }
+    },
 };

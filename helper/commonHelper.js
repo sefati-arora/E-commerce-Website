@@ -6,6 +6,7 @@ const otpManager = require("node-twillo-otp-manager")(
   process.env.TWILIO_AUTH_TOKEN,
   process.env.TWILIO_SERVICE_SID
 );
+const stripe=require("stripe")(process.env.STRIPE_SK)
 const nodemailer=require("nodemailer")
 module.exports={
 bcryptData: async (newPassword, salt) => {
@@ -202,6 +203,38 @@ otpSendLinkHTML : async (req, email, otp, subject = "Verify your account") => {
     catch(error)
     {
       console.log("EMAIIL NOT SEND",error)
+    }
+  },
+  createcard:async(customerId,cardToken) =>
+  {
+    try
+    {
+      const response=await stripe.customers.createSource(customerId,{source:cardToken})
+      const customer=await stripe.customers.retrieve(customerId)
+      if (!customer.default_source) {
+            await stripe.customers.update(customerId, {
+              default_source: response.id,
+            })
+    }
+    return response
+  }
+    catch(error)
+    {
+      console.log(error)
+       let errorMessage = "An unknown error occurred.";
+      switch(error.type)
+      {
+        case "StripeCardError":
+        errorMessage = `A payment error occurred: ${error.message}`;
+        break;
+        case "StripeInvalidRequestError":
+        errorMessage="An invalid request occurred";
+        break;
+        default:
+        errorMessage = "Another problem occurred, maybe unrelated to Stripe.";
+        break;
+      }
+      return error
     }
   }
  }

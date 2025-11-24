@@ -80,6 +80,12 @@ module.exports=(Sequelize,sequelize,DataTypes) =>
          type:DataTypes.INTEGER,
          allowNull:true,
          defaultValue:0   //0 for dispatching  1 for out for delivery and 2 for delivered!
+        },
+        customerId:
+        {
+         type:DataTypes.STRING(225),
+         allowNull:true,
+         defaultValue:null
         }
  },
  {
