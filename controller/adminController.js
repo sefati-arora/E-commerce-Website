@@ -94,6 +94,7 @@ module.exports = {
       for (let i = 0; i < file.length; i++) {
         const path = await commonhelper.fileUpload(file[i]);
         await Models.productImage.create({
+         productId:product.id,
           Images: path,
         });
       }

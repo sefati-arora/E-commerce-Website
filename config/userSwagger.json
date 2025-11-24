@@ -366,22 +366,6 @@
                         "value": "EMAIL"
                     },
                     {
-                        "name": "devicetoken",
-                        "in": "formData",
-                        "description": "ENTER DEVICE TOKEN",
-                        "required": true,
-                        "type": "string",
-                        "value": "DEVICE TOKEN"
-                    },
-                    {
-                        "name": "role",
-                        "in": "formData",
-                        "description": "ROLE HERE",
-                        "required": true,
-                        "type": "number",
-                        "value": "ROLE"
-                    },
-                    {
                         "name": "location",
                         "in": "formData",
                         "description": "ENTER YOUR LOCATION",
@@ -1334,6 +1318,128 @@
                     }
                 ]
           }
+        },
+        "/api/createstripe":
+        {
+          "post":{
+            "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-createstripe-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters":[
+                    {
+                         "name":""
+                    }
+                ],
+                 "responses": {
+                    "200": {
+                        "description": "STRIPE CREATED SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+          }
+        },
+        "/api/createCard":
+        {
+           "post":{
+            "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-createCard-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters":[
+                    {
+                        "name":"customerId",
+                        "in":"formData",
+                        "description":"CUSTOMER ID",
+                        "required":true,
+                        "type":"string",
+                        "value":"CUSTOMER ID" 
+                    },
+                    {
+                        "name":"cardToken",
+                        "in":"formData",
+                        "description":"cardToken",
+                        "required":true,
+                        "type":"string",
+                        "value":"cardToken"
+                    }
+                ],
+                 "responses": {
+                    "200": {
+                        "description": "CARD CREATED SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+           }
+        },
+        "/api/getToken":
+        {
+            "get":{
+            "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-getToken-get",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters":[
+                    {
+                        "name":""
+                    }
+                ],
+                 "responses": {
+                    "200": {
+                        "description": "TOEKN GET SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/api/cardList":{ 
+            "post":{
+                  "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-cardList-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters":[
+                    {
+                        
+                        "name":"customerId",
+                        "in":"formData",
+                        "description":"CUSTOMER ID",
+                        "required":true,
+                        "type":"string",
+                        "value":"CUSTOMER ID" 
+                    }
+                ],
+                   "responses": {
+                    "200": {
+                        "description": "CARD LIST GET SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
         },
         "definitions": {}
     }

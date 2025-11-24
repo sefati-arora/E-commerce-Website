@@ -25,15 +25,18 @@ Models.storeModel.belongsTo(Models.productModel, { foreignKey: "productId" });
 Models.userModel.hasMany(Models.orderModel, { foreignKey: "userId" });
 Models.orderModel.belongsTo(Models.userModel, { foreignKey: "userId" });
 Models.productModel.hasMany(Models.orderItemModel, { foreignKey: "productId" });
+Models.productModel.hasMany(Models.productImage, { foreignKey: "productId" });
+Models.productImage.belongsTo(Models.productModel, { foreignKey: "productId" });
 Models.orderItemModel.belongsTo(Models.productModel, {
   foreignKey: "productId",
 });
 Models.productReviewModel.hasMany(Models.likeModel, {
-  foreignKey: "ReviewId"
+  foreignKey: "ReviewId",
 });
 
 Models.likeModel.belongsTo(Models.productReviewModel, {
-  foreignKey: "ReviewId",as:"ReviewLikes"
+  foreignKey: "ReviewId",
+  as: "ReviewLikes",
 });
 
 module.exports = {
@@ -58,6 +61,7 @@ module.exports = {
         password: Joi.string().required(),
         devicetoken: Joi.string().required(),
         role: Joi.string().required(),
+        isOnline: Joi.string().required(),
         location: Joi.string().required(),
         latitude: Joi.string().required(),
         longitude: Joi.string().required(),
@@ -71,11 +75,17 @@ module.exports = {
         email,
         password,
         devicetoken,
+        isOnline,
         role,
         locationFrom,
         latitude,
-        longitude
+        longitude,
       } = payload;
+         const users=await Models.userModel.findOne({where:{email:payload.email,phoneNumber:payload.phoneNumber}})
+      if(users)
+      {
+        return res.status(404).json({message:"User already exist"})
+      };
       const hashpassword = await argon2.hash(password);
       const customer = await stripe.customers.create({
         description: "anything",
@@ -98,10 +108,11 @@ module.exports = {
         devicetoken,
         profile: path,
         role,
+        isOnline,
         locationFrom,
         latitude,
         longitude,
-        customerId: customer.id
+        customerId: customer.id,
       });
       if (user) {
         const phone = payload.countryCode + payload.phoneNumber;
@@ -125,14 +136,14 @@ module.exports = {
       const payload = await helper.validationJoi(req.body, schema);
       const { email, password } = payload;
       const hashpassword = await argon2.hash(password);
-        const customer = await stripe.customers.create({
+      const customer = await stripe.customers.create({
         description: "anything",
         email: payload.email,
       });
       const user = await Models.userModel.create({
         email,
         password: hashpassword,
-        customerId:customer.id
+        customerId: customer.id,
       });
       const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY);
       return res.status(200).json({ message: "USER LOGIN", user, token });
@@ -204,8 +215,8 @@ module.exports = {
   },
   changePassword: async (req, res) => {
     try {
-        const userId = req.user.id;
-         console.log("userId:",userId) 
+      const userId = req.user.id;
+      console.log("userId:", userId);
       const schema = Joi.object({
         oldpassword: Joi.string().required(),
         newpassword: Joi.string().min(6).required(),
@@ -213,11 +224,11 @@ module.exports = {
       });
       const payload = await helper.validationJoi(req.body, schema);
       const { oldpassword, newpassword } = payload;
-      const user = await Models.userModel.findOne({ where: { id:userId } });
+      const user = await Models.userModel.findOne({ where: { id: userId } });
       if (!user) {
         return res.status(404).json({ message: "USER NOT FOUND!" });
       }
-      console.log("userId:",userId)
+      console.log("userId:", userId);
       console.log("hash", user.password);
       console.log(">>>>", oldpassword);
       const validpassword = await argon2.verify(
@@ -235,7 +246,7 @@ module.exports = {
       });
       const existuser = await Models.userModel.update(
         { password: hashedPassword },
-        { where: { id:userId } }
+        { where: { id: userId } }
       );
       return res.status(200).json({ message: "PASSWORD CHANGED!", existuser });
     } catch (error) {
@@ -253,9 +264,6 @@ module.exports = {
         phoneNumber,
         countryCode,
         email,
-        role,
-        isOnline,
-        isorderassign,
         location,
         latitude,
         longitude,
@@ -276,7 +284,7 @@ module.exports = {
           phoneNumber,
           countryCode,
           email,
-          profile:profilepath,
+          profile: profilepath,
           role,
           isOnline,
           isorderassign,
@@ -310,13 +318,13 @@ module.exports = {
   address: async (req, res) => {
     try {
       const userId = req.user.id;
-       console.log("userId",userId)
+      console.log("userId", userId);
       const schema = Joi.object({
         country: Joi.string().required(),
         state: Joi.string().required(),
         city: Joi.string().required(),
         hnumber: Joi.string().required(),
-        location:Joi.string().required(),
+        location: Joi.string().required(),
         latitude: Joi.string().required(),
         longitude: Joi.string().required(),
       });
@@ -325,14 +333,22 @@ module.exports = {
       if (!users) {
         return res.status(404).json({ message: "USER NOT FOUND" });
       }
-       console.log("userId",userId)
+      console.log("userId", userId);
+      const existingAddress = await Models.addressModel.findOne({
+        where: { userId },
+      });
+      if (existingAddress) {
+        return res
+          .status(400)
+          .json({ message: "Address already exists for this user" });
+      }
       const user = await Models.addressModel.create({
         userId,
         country: payload.country,
         state: payload.state,
         city: payload.city,
         hnumber: payload.hnumber,
-        location:payload.location,
+        location: payload.location,
         latitude: payload.latitude,
         longitude: payload.longitude,
       });
@@ -382,14 +398,22 @@ module.exports = {
   },
   cartData: async (req, res) => {
     try {
+      const userId = req.user.id;
       const schema = Joi.object({
         productId: Joi.string().required(),
         Quantity: Joi.number().required(),
       });
       const payload = await helper.validationJoi(req.body, schema);
+      const { productId, Quantity } = payload;
+      const product = await Models.productModel.findOne({
+        where: { id: payload.productId },
+      });
+      if (!product) {
+        return res.status(404).json({ message: "PRODUCT NOT FOUND!" });
+      }
       const user = await Models.cartModel.create({
-        productId: payload.productId,
-        Quantity: payload.Quantity,
+        productId,
+        Quantity,
       });
       return res.status(200).json({ message: "YOU PRODUCT ADDED!", user });
     } catch (error) {
@@ -457,7 +481,7 @@ module.exports = {
   subscriptionBuy: async (req, res) => {
     try {
       const userId = req.user.id;
-      const { subscriptionId ,subscriptionType} = req.body;
+      const { subscriptionId, subscriptionType } = req.body;
       const subscriptionBuy = await Models.subscriptionModel.findOne({
         where: { id: subscriptionId },
       });
@@ -487,100 +511,105 @@ module.exports = {
     }
   },
   AddCartItem: async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { productId, Quantity } = req.body;
-    if (!productId || !Quantity) {
-      return res.status(400).json({
-        message: "productId and quantity are required!"
+    try {
+      const userId = req.user.id;
+      const { productId, Quantity } = req.body;
+      if (!productId || !Quantity) {
+        return res.status(400).json({
+          message: "productId and quantity are required!",
+        });
+      }
+      let cart = await Models.cartManageModel.findOne({ where: { userId } });
+      if (!cart) {
+        cart = await Models.cartManageModel.create({ userId });
+      }
+      let cartItem = await Models.cartModel.findOne({
+        where: { cartId: cart.id, productId },
+      });
+      const productExists = await Models.productModel.findOne({
+        where: { id: productId },
+      });
+      if (!productExists) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      if (cartItem) {
+        cartItem.Quantity += Number(Quantity);
+        await cartItem.save();
+      } else {
+        cartItem = await Models.cartModel.create({
+          cartId: cart.id,
+          productId,
+          Quantity,
+        });
+      }
+      const cartData = await Models.cartManageModel.findOne({
+        where: { id: cart.id },
+        include: [
+          {
+            model: Models.cartModel,
+            include: [
+              {
+                model: Models.productModel,
+                include: {
+                  model: Models.productImage,
+                },
+              },
+            ],
+          },
+        ],
+      });
+
+      return res.status(200).json({
+        message: "Cart updated successfully",
+        cartItem,
+        cartData,
+      });
+    } catch (error) {
+      console.error("AddCartItem Error:", error);
+      return res.status(500).json({
+        message: "Internal server error",
+        error: error.message,
       });
     }
-    let cart = await Models.cartManageModel.findOne({ where: { userId } });
-    if (!cart) {
-      cart = await Models.cartManageModel.create({ userId });
-    }
-    let cartItem = await Models.cartModel.findOne({
-      where: { cartId: cart.id, productId },
-    });
+  },
+  UpdateCart: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { cartId, Quantity } = req.body;
 
-    if (cartItem) {
-      cartItem.Quantity += Number(Quantity);
+      // if (!cartItemId || !Quantity) {
+      //   return res.status(400).json({
+      //     message: "cartItemId and Quantity are required",
+      //   });
+      // }
+
+      const userCart = await Models.cartManageModel.findOne({
+        where: { userId },
+      });
+
+      if (!userCart) {
+        return res.status(404).json({ message: "USER CART NOT FOUND!" });
+      }
+      const cartItem = await Models.cartModel.findOne({
+        where: { id: cartId },
+      });
+      console.log("USER:", userId);
+      console.log("USER CART ID:", userCart?.id);
+
+      if (!cartItem) {
+        return res.status(404).json({ message: "CART ITEM NOT FOUND!" });
+      }
+      cartItem.Quantity = Quantity;
       await cartItem.save();
-    } else {
-      cartItem = await Models.cartModel.create({
-        cartId: cart.id,
-        productId,
-        Quantity,
+      return res.status(200).json({
+        message: "CART UPDATED!",
+        updatedItem: cartItem,
       });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "ERROR", error: error.message });
     }
-    const cartData = await Models.cartManageModel.findOne({
-      where: { id: cart.id },
-      include: [
-        {
-          model: Models.cartModel,
-          include: [
-            {
-              model: Models.productModel,
-            },
-          ],
-        },
-      ],
-    });
-
-    return res.status(200).json({
-      message: "Cart updated successfully",
-      cartItem,
-      cartData,
-    });
-  } catch (error) {
-    console.error("AddCartItem Error:", error);
-    return res.status(500).json({
-      message: "Internal server error",
-      error: error.message,
-    });
-  }
-},
-UpdateCart: async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { cartId, Quantity } = req.body;
-
-    // if (!cartItemId || !Quantity) {
-    //   return res.status(400).json({
-    //     message: "cartItemId and Quantity are required",
-    //   });
-    // }
-
-    const userCart = await Models.cartManageModel.findOne({
-      where: { userId },
-    });
-
-    if (!userCart) {
-      return res.status(404).json({ message: "USER CART NOT FOUND!" });
-    }
-    const cartItem = await Models.cartModel.findOne({
-      where: { id: cartId},
-    });
-   console.log("USER:", userId);
-console.log("USER CART ID:", userCart?.id);
-
-
-    if (!cartItem) {
-      return res.status(404).json({ message: "CART ITEM NOT FOUND!" });
-    }
-    cartItem.Quantity = Quantity;
-    await cartItem.save();
-    return res.status(200).json({
-      message: "CART UPDATED!",
-      updatedItem: cartItem,
-    });
-
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "ERROR", error: error.message });
-  }
-},
-
+  },
   DeleteCart: async (req, res) => {
     try {
       const { cartItemId } = req.body;
@@ -601,18 +630,15 @@ console.log("USER CART ID:", userCart?.id);
       const userId = req.user.id;
       const userLatitude = req.user.latitude;
       const userLongitude = req.user.longitude;
-      const {
-        addressId,
-        productId,
-        storeId,
-        assignDriverId,
-      } = req.body;
+      const { addressId, productId, storeId} = req.body;
       if (!addressId)
         return res.status(404).json({ message: "ADDRESS REQUIRED!" });
       const address = await Models.addressModel.findOne({
         where: { id: addressId, userId, isDefault: 1 },
       });
-      if (!address) return res.status(404).json({ message: "Invalid data!" });
+      if (!address) {
+        return res.status(404).json({ message: "Invalid data!" });
+      }
       console.log("PRODUCT ID:", productId);
 
       //...........STOREID..........................
@@ -632,7 +658,7 @@ console.log("USER CART ID:", userCart?.id);
       }
 
       //.........PRODUCT IN STORE............
-      const product = await Models.storeModel.findOne({
+      const product = await Models.storeModel.findAll({
         where: { productId },
         include: [
           {
@@ -641,20 +667,9 @@ console.log("USER CART ID:", userCart?.id);
         ],
       });
       console.log("STORE RESULT:", product);
-      if (!product) {
+      if (product.length === 0) {
         return res.status(404).json({ message: "PRODUCT OUT OF STOCK!" });
       }
-
-      //FIND STORE
-      const store = await Models.productModel.findAll({
-        where: { id: productId },
-        include: [
-          {
-            model: Models.storeModel,
-          },
-        ],
-      });
-      console.log("PRODUCT IN STORE", store);
 
       //........STORE NEARBY........
       const nearestStore = await Models.userModel.findOne({
@@ -690,20 +705,19 @@ console.log("USER CART ID:", userCart?.id);
         return res.status(404).json({ message: "Cart is empty" });
       // Calculate total
       let total = 0;
-     cart.cartTables.forEach((item) => {
-  let price = item.productTable.price;
-  let offerPercentage = item.productTable.offer || 0; 
-  let discount = offerPercentage / 100;
-  let finalPricePerItem = price * (1 - discount);
-  total += finalPricePerItem * item.Quantity;
-});
-     // Create order
+      cart.cartTables.forEach((item) => {
+        let price = item.productTable.price;
+        let offerPercentage = item.productTable.offer || 0;
+        let discount = offerPercentage / 100;
+        let finalPricePerItem = price * (1 - discount);
+        total += finalPricePerItem * item.Quantity;
+      });
+      // Create order
       const order = await Models.orderModel.create({
         userId,
         addressId,
         storeId,
-        assignDriverId,
-        Amount:total,
+        Amount: total,
         status: 0,
       });
 
@@ -719,51 +733,6 @@ console.log("USER CART ID:", userCart?.id);
           title: items.productTable.title,
         });
       }
-      //assign driver....
-      const driver = await Models.userModel.findOne({
-        where: { id: assignDriverId, role: 2 },
-      });
-      if (!driver) {
-        console.log("driver not found!");
-      }
-      console.log("driver:", driver);
-      //driver status...
-      const driverstatus = await Models.userModel.findOne({
-        where: { id: assignDriverId, role: 2 },
-      });
-      if (driverstatus) {
-        await Models.userModel.update(
-          { status: 1 },
-          { where: { id: assignDriverId, role: 2 } }
-        );
-      }
-      console.log("driver status:", driverstatus);
-      // create notification after dispatch
-
-      const dispatch = await Models.userModel.findOne({
-        where: { id: assignDriverId, role: 2, status: 1 },
-      });
-
-      if (dispatch) {
-        const existingNotification = await Models.notificationModel.findOne({
-          where: {
-            receiverId: userId,
-            isnotification: 1,
-          },
-        });
-
-        if (!existingNotification) {
-          await Models.notificationModel.create({
-            senderId: seller.id,
-            receiverId: userId,
-            orderId: order.id,
-            title: "Order dispatched successfully",
-            message: "ORDER DISPATCH!",
-            isnotification: 1,
-          });
-        }
-      }
-      console.log("ORDER DISPATCHED:", dispatch);
 
       //order history.........
       const orderhistory = await Models.userModel.findAll({
@@ -834,77 +803,16 @@ ${productDetails}
 
         console.log(`ORDER EMAIL SENT TO: ${usermail.email}`);
       }
-
-      //NOTIFICATION FOR ORDER PLACING!
-      const orderplace = await Models.orderModel.findOne({
-        where: { id: order.id, userId },
-      });
-      if (orderplace) {
-        await Models.notificationModel.create({
-          senderId: userId,
-          receiverId: userId,
-          title: "CONGRATULATIONS,ORDER PLACED",
-        });
-      }
-
-      //create notification
-      const notified = await Models.notificationModel.create({
-        senderId: userId,
-        receiverId: assignDriverId,
-        orderId: order.id,
-        title: "NEW ORDER!",
-        message: "NEW ORDER!",
-      });
-      console.log("new order notification", notified);
-
-      // notification to user after assign driver
-      const notification = await Models.notificationModel.create({
-        senderId: seller.id,
-        receiverId: userId,
-        orderId: order.id,
-        title: "YOUR DRIVER HAS BEEN ASSIGNED TO YOUR ORDER!",
-        message: "DRIVER ASSIGN!",
-      });
-      console.log("driver assigned", notification);
-
-      //order delivered notification....
-      const delivered = await Models.userModel.findOne({
-        where: { id: assignDriverId, role: 2 },
-      });
-      if (delivered) {
-        await Models.userModel.update(
-          { status: 2 },
-          { where: { id: assignDriverId, role: 2 } }
-        );
-      }
-      console.log("driver status:", delivered);
-      const orderdelivered = await Models.userModel.findOne({
-        where: { id: assignDriverId, role: 2, status: 2 },
-      });
-      if (orderdelivered) {
-        await Models.notificationModel.create({
-          senderId: seller.id,
-          receiverId: userId,
-          orderId: order.id,
-          title: "ORDER DELIVERED",
-          message: "ORDER DELIVERED SUCCESSFULLY!",
-        });
-      }
-      console.log("ORDER DELIVERED NOTIFICATION", orderdelivered);
       //Clear cart items
       // await Models.cartModel.destroy({ where: { cartId: cart.id } });
       return res.status(200).json({
         message: "Order placed successfully",
         orderId: order.id,
-        totalAmount:total,
+        totalAmount: total,
         cart,
         product,
         nearestStore,
-        notified,
-        orderplace,
         orderhistory,
-        notification,
-        dispatch,
       });
     } catch (error) {
       console.log(error);
@@ -946,15 +854,15 @@ ${productDetails}
   },
   driverlist: async (req, res) => {
     try {
-      const userId=req.user.id
+      const userId = req.user.id;
       const drivers = await Models.userModel.findOne({
         where: {
-          id:userId,
+          id: userId,
           isOnline: 1,
           isorderassign: 0,
         },
       });
-      console.log(">>>>",drivers)
+      console.log(">>>>", drivers);
       return res
         .status(200)
         .json({ message: "DRIVER AVAILABLE ARE:", drivers });
@@ -967,6 +875,8 @@ ${productDetails}
     try {
       const userId = req.user.id;
       const { orderId } = req.body;
+
+      // Find the driver
       const driver = await Models.userModel.findOne({
         where: { id: userId, role: 2 },
       });
@@ -977,19 +887,57 @@ ${productDetails}
         return res.status(404).json({ message: "DRIVER IS OFFLINE" });
       }
       if (driver.isorderassign === 1) {
-        return res.status(404).json({ message: "DRIVER ALREADY ASSIGN" });
+        return res.status(404).json({ message: "DRIVER ALREADY ASSIGNED" });
       }
+      // Find the order
       const order = await Models.orderModel.findOne({ where: { id: orderId } });
-      if (!order) {
-        return res.status(404).json({ message: "ORDER NOT FOUND!" });
-      }
+      if (!order) return res.status(404).json({ message: "ORDER NOT FOUND!" });
+
+      //  Find the seller
+      const seller = await Models.userModel.findOne({
+        where: { id: order.sellerId, role: 3 },
+      });
+      if (!seller)
+        return res.status(404).json({ message: "SELLER NOT FOUND!" });
+
+      //  Assign driver
       await Models.userModel.update(
-        { isOnline: 1, isorderassign: 1 },
+        { isorderassign: 1, status: 2 },
         { where: { id: userId } }
       );
-      return res.status(200).json({ message: "ORDER ASSIGN!", driver });
+
+      // Notify driver
+      await Models.notificationModel.create({
+        senderId: seller.id,
+        receiverId: userId,
+        orderId: order.id,
+        title: "YOU HAVE BEEN ASSIGNED TO AN ORDER",
+        message: "Please prepare to deliver the order.",
+      });
+
+      // Notify order owner
+      await Models.notificationModel.create({
+        senderId: userId,
+        receiverId: order.userId,
+        orderId: order.id,
+        title: "YOUR ORDER HAS BEEN ASSIGNED",
+        message: "A driver is on the way to deliver your order.",
+      });
+
+      //Notify order placed
+      await Models.notificationModel.create({
+        senderId: seller.id,
+        receiverId: order.userId,
+        orderId: order.id,
+        title: "ORDER PLACED SUCCESSFULLY",
+        message: "Your order has been placed and is being processed.",
+      });
+
+      return res
+        .status(200)
+        .json({ message: "ORDER ASSIGNED SUCCESSFULLY", driver });
     } catch (error) {
-      console.log(error);
+      console.error(error);
       return res.status(500).json({ message: "ERROR", error });
     }
   },
@@ -1024,145 +972,139 @@ ${productDetails}
       return res.status(500).json({ message: "ERROR", error });
     }
   },
-  productReview:async(req,res) =>
-  {
-    try
-    {
-      const userId=req.user.id;
-      const{productId}=req.body;
-      const schema=Joi.object({
-        productId:Joi.string().required(),
-        message:Joi.string().required()
+  productReview: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { productId } = req.body;
+      const schema = Joi.object({
+        productId: Joi.string().required(),
+        message: Joi.string().required(),
       });
-      const payload=await helper.validationJoi(req.body,schema);
+      const payload = await helper.validationJoi(req.body, schema);
       const file = req.files.file;
       const path = await commonhelper.fileUpload(file);
-      const{message}=payload;
-      const review=await Models.productReviewModel.create({userId,productId,message,image:path});
-      return res.status(200).json({message:"REVIEW BY USER",review})
-    }
-    catch(error)
-    {
-      console.log(error)
-      return res.status(500).json({message:"ERROR",error})
+      const { message } = payload;
+      const review = await Models.productReviewModel.create({
+        userId,
+        productId,
+        message,
+        image: path,
+      });
+      return res.status(200).json({ message: "REVIEW BY USER", review });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
     }
   },
- createLike: async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { ReviewId } = req.body;
-    const existingLike = await Models.likeModel.findOne({
-      where: { userId, ReviewId }
-    });
-    if (existingLike) {
-      return res.status(400).json({ message: "Already liked" });
+  createLike: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { ReviewId } = req.body;
+      const existingLike = await Models.likeModel.findOne({
+        where: { userId, ReviewId },
+      });
+      if (existingLike) {
+        return res.status(400).json({ message: "Already liked" });
+      }
+      const like = await Models.likeModel.create({ userId, ReviewId });
+
+      return res.status(200).json({ message: "LIKE CREATED", like });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR" });
     }
-    const like = await Models.likeModel.create({ userId, ReviewId });
-
-    return res.status(200).json({ message: "LIKE CREATED", like });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "ERROR" });
-  }
-},
-countLikes:async(req,res)=>
-{
-  try
-  {
-    const{ReviewId}=req.body;
-    const likes=await Models.likeModel.findAndCountAll({
-      where:{ReviewId},
-      include:
-      [
-        {
-          model:Models.productReviewModel,
-          as:"ReviewLikes"
-        }
-      ]
-    })
-    return res.status(200).json({message:"USER LIKES:",likes})
-  }
-  catch(error)
-  {
-    console.log(error)
-    return res.status(500).json({message:"ERROR",error})
-  }
-},
-productListing: async (req, res) => {
-  try {
-    const search = (req.query.search || "").trim();
-    const categoryId = req.query.categoryId || null;
-
-    let where = {};
-
-    // Add search filter if search text exists
-    if (search !== "") {
-      where[Op.or] = [
-        { title: { [Op.like]: `%${search}%` } },
-        { description: { [Op.like]: `%${search}%` } }
-      ];
+  },
+  countLikes: async (req, res) => {
+    try {
+      const { ReviewId } = req.body;
+      const likes = await Models.likeModel.findAndCountAll({
+        where: { ReviewId },
+        include: [
+          {
+            model: Models.productReviewModel,
+            as: "ReviewLikes",
+          },
+        ],
+      });
+      return res.status(200).json({ message: "USER LIKES:", likes });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
     }
-    if (categoryId) {
-      where.categoryId = categoryId;
+  },
+  productListing: async (req, res) => {
+    try {
+      const search = (req.query.search || "").trim();
+      const categoryId = req.query.categoryId || null;
+
+      let where = {};
+
+      // Add search filter if search text exists
+      if (search !== "") {
+        where[Op.or] = [
+          { title: { [Op.like]: `%${search}%` } },
+          { description: { [Op.like]: `%${search}%` } },
+        ];
+      }
+      if (categoryId) {
+        where.categoryId = categoryId;
+      }
+      const products = await Models.productModel.findAll({ where });
+
+      return res.status(200).json({
+        message: "Product listing",
+        products,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
     }
-    const products = await Models.productModel.findAll({ where });
+  },
+  paymentCreateCOD: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { productId, currency, Amount } = req.body;
 
-    return res.status(200).json({
-      message: "Product listing",
-      products
-    });
+      if (!productId || !Amount || !currency) {
+        return res
+          .status(400)
+          .json({ message: "productId, Amount, and currency are required" });
+      }
 
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "ERROR", error });
-  }
-},
-paymentCreateCOD :async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { productId, currency, Amount } = req.body;
-
-    if (!productId || !Amount || !currency) {
-      return res.status(400).json({ message: "productId, Amount, and currency are required" });
+      const payment = await Models.transationModel.create({
+        userId,
+        productId,
+        currency,
+        Amount,
+        paymentStatus: 0, // pending
+        paymentMethod: 0, // COD
+      });
+      const notification = await Models.notificationModel.create({
+        receiverId: userId,
+        title: "pay your amount after order delievered!",
+        description: "PAYEMENT MADE COD",
+      });
+      return res
+        .status(200)
+        .json({ message: "COD Order Created!", payment, notification });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
     }
-
-    const payment = await Models.transationModel.create({
-      userId,
-      productId,
-      currency,
-      Amount,
-      paymentStatus: 0,   // pending
-      paymentMethod: 0    // COD
-    });
-       const notification= await Models.notificationModel.create({
-        receiverId:userId,
-         title:"pay your amount after order delievered!",
-         description:"PAYEMENT MADE COD"
-      })
-    return res.status(200).json({ message: "COD Order Created!", payment,notification});
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "ERROR", error });
-  }
-},
-createstripe:async(req,res)=>
-{
-  try
-  {
-    let response=
-    {
-      SK: process.env.STRIPE_SK,
+  },
+  createstripe: async (req, res) => {
+    try {
+      let response = {
+        SK: process.env.STRIPE_SK,
         PK: process.env.STRIPE_PK,
+      };
+      return res.status(200).json({ message: "STRIPE DATA", response });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
     }
-    return res.status(200).json({message:"STRIPE DATA",response})
-  }
-  catch(error)
-  {
-    console.log(error)
-    return res.status(500).json({message:"ERROR",error})
-  }
-},
- createCard: async (req, res) => {
+  },
+  createCard: async (req, res) => {
     try {
       const response = await commonhelper.createcard(
         req.user.customerId,
@@ -1177,32 +1119,27 @@ createstripe:async(req,res)=>
       return res.status(500).json({ message: "ERROR!" });
     }
   },
-getToken:async(req,res)=>
-{
-  try
-  {
-      const token={id:"tok_visa"};
-      console.log("TEST CARD",token.id);
-      return res.status(200).json({message:"TOKEN",token})
-  }
-  catch(error)
-  {
-    console.log(error)
-    return res.status(500).json({message:"ERROR"})
-  }
-},
-cardList:async(req,res)=>
-{
-  try
-  { 
-    const paymentMethods=await stripe.paymentMethods.list({
-      customer:req.user.customerId,
-      type:"card"
-    });
-    const customer=await stripe.customers.retrieve(req.user.customerId);
-    const defaultpaymentMethodId=customer.invoice_settings.default_payment_method;
-     console.log("defaultpayment",defaultpaymentMethodId);
-     const cardsWithDefaultFlag = paymentMethods.data.map((card) => {
+  getToken: async (req, res) => {
+    try {
+      const token = { id: "tok_visa" };
+      console.log("TEST CARD", token.id);
+      return res.status(200).json({ message: "TOKEN", token });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR" });
+    }
+  },
+  cardList: async (req, res) => {
+    try {
+      const paymentMethods = await stripe.paymentMethods.list({
+        customer: req.user.customerId,
+        type: "card",
+      });
+      const customer = await stripe.customers.retrieve(req.user.customerId);
+      const defaultpaymentMethodId =
+        customer.invoice_settings.default_payment_method;
+      console.log("defaultpayment", defaultpaymentMethodId);
+      const cardsWithDefaultFlag = paymentMethods.data.map((card) => {
         const isDefault = card.id === defaultpaymentMethodId;
         console.log(`Card ID: ${card.id}, Is Default: ${isDefault}`);
         return {
@@ -1210,38 +1147,34 @@ cardList:async(req,res)=>
           isDefault,
         };
       });
-      return res.status(200).json({message:"CARD LIST:",cardsWithDefaultFlag})
-  }
-  catch(error)
-  {
-    console.log(error)
-    return res.status(500).json({message:"ERROR",error})
-  }
-},
-createPayment:async(req,res) =>
-{
-  try
-  {
-     const{amount,cardId}=req.body;
-     const response=await stripe.paymentIntents.create({
-      amount:parseInt((amount*100)),
-      currency:"usd",
-      customer: req.user.customerId,
+      return res
+        .status(200)
+        .json({ message: "CARD LIST:", cardsWithDefaultFlag });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
+    }
+  },
+  createPayment: async (req, res) => {
+    try {
+      const { amount, cardId } = req.body;
+      const response = await stripe.paymentIntents.create({
+        amount: parseInt(amount * 100),
+        currency: "usd",
+        customer: req.user.customerId,
         payment_method: cardId,
         confirm: true,
         return_url: "http://localhost:3000/users/cmcUser",
-     })
-     return res.status("200").json({message:"PAYMENT CREATE",response})
-  }
-  catch(error)
-  {
-    console.log(error)
-    return res.status(500).json({message:"ERROR",error})
-  }
-},
-stripeIntent: async (req, res) => {
+      });
+      return res.status("200").json({ message: "PAYMENT CREATE", response });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "ERROR", error });
+    }
+  },
+  stripeIntent: async (req, res) => {
     try {
-      console.log(">>>",req.body)
+      console.log(">>>", req.body);
       let userDetail = await Models.userModel.findOne({
         where: { id: req.user.id },
       });
@@ -1260,7 +1193,7 @@ stripeIntent: async (req, res) => {
           enabled: true,
         },
       });
-       let result = {
+      let result = {
         paymentIntent: paymentIntent.client_secret,
 
         ephemeralKey: ephemeralKey.secret,
@@ -1271,57 +1204,61 @@ stripeIntent: async (req, res) => {
 
         transactionId: paymentIntent.id,
       };
-      const{orderId}=req.body;
-      let orderDetails=await Models.orderModel.findOne({id:orderId},{where:{id:orderId}})
-      let objectToSave={
+      const { orderId } = req.body;
+      let orderDetails = await Models.orderModel.findOne(
+        { id: orderId },
+        { where: { id: orderId } }
+      );
+      let objectToSave = {
         userId: req.user.id,
-        orderId:orderDetails,
-         amount: req.body.amount,
+        orderId: orderDetails,
+        amount: req.body.amount,
 
         chargeAmount: req.body.chargeAmount,
 
         transactionId: paymentIntent.id,
 
         description: `You received ${parseInt(req.body.amount)} $`,
-      }
+      };
 
-       await Models.transationModel.create(objectToSave);
+      await Models.transationModel.create(objectToSave);
       return res.status(200).json({ message: "DATA INTENT", result });
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: "ERROR" });
     }
   },
-generatePdfFromApi:async (req, res) => {
-  try {
-    // 1️⃣ Fetch data from 3rd-party API
-    const apiResponse = await axios.get("https://jsonplaceholder.typicode.com/users");
-    const users = apiResponse.data; // example data
+  generatePdfFromApi: async (req, res) => {
+    try {
+      // 1️⃣ Fetch data from 3rd-party API
+      const apiResponse = await axios.get(
+        "https://jsonplaceholder.typicode.com/users"
+      );
+      const users = apiResponse.data; // example data
 
-    // 2️⃣ Create PDF
-    const doc = new PDFDocument();
+      // 2️⃣ Create PDF
+      const doc = new PDFDocument();
 
-    // Set response headers
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "attachment; filename=users.pdf");
+      // Set response headers
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", "attachment; filename=users.pdf");
 
-    // Pipe PDF to response
-    doc.pipe(res);
+      // Pipe PDF to response
+      doc.pipe(res);
 
-    // Add PDF content
-    doc.fontSize(20).text("Users Report", { align: "center" });
-    doc.moveDown();
+      // Add PDF content
+      doc.fontSize(20).text("Users Report", { align: "center" });
+      doc.moveDown();
 
-    users.forEach((user, index) => {
-      doc.fontSize(12).text(`${index + 1}. ${user.name} - ${user.email}`);
-    });
+      users.forEach((user, index) => {
+        doc.fontSize(12).text(`${index + 1}. ${user.name} - ${user.email}`);
+      });
 
-    // Finalize PDF
-    doc.end();
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Failed to generate PDF");
-  }
-}
+      // Finalize PDF
+      doc.end();
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Failed to generate PDF");
+    }
+  },
 };
