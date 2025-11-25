@@ -172,7 +172,8 @@ module.exports = {
           Amount,
           description,
         });
-        return res.status(200).json({ message: "SUBSCRIPTION CREATED!", user });
+        const Update=await Models.subscriptionModel.update({status:1},{where:{id:subscriptionId}})
+        return res.status(200).json({ message: "SUBSCRIPTION CREATED!", user,Update });
       } catch (error) {
         console.log(error);
         return res.status(500).json({ message: "error", error });

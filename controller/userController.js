@@ -526,7 +526,7 @@ module.exports = {
         {
           await Models.subscriptionBuyModel.destroy({where:{id:subscriptionId}})
         }
-      const Update= await Models.subscriptionModel.update({ status:1, DeleteAt: new Date() },{where:{id:subscriptionId}});
+      const Update= await Models.subscriptionModel.update({ status:0 },{where:{id:subscriptionId}});
         return res.status(200).json({message:"SUBSCRIPTION CANCELED!",Update})
       }
       catch(error)
