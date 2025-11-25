@@ -8,7 +8,7 @@ const argon2 = require("argon2");
 const stripe = require("stripe")(process.env.STRIPE_SK);
 const { Op, literal } = require("sequelize");
 const axios = require("axios");
-const PDFDocument = require("pdfkit");
+// const PDFDocument = require("pdfkit");
 const otpManager = require("node-twillo-otp-manager")(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN,
@@ -504,11 +504,36 @@ module.exports = {
         startDate: startDate,
         EndDate: EndDate,
       });
-      return res.status(200).json({ message: "SUBSCRIPTION BUY", sub });
+      const Update=await Models.subscriptionBuyModel.update({status:1},{where:{subscriptionId}})
+      return res.status(200).json({ message: "SUBSCRIPTION BUY", sub,Update });
     } catch (error) {
       console.log(error);
       return res.status(500).json({ message: "ERROR", error });
     }
+  },
+  subscriptionCancel:async(req,res) =>
+  {
+      try
+      {
+        const userId=req.user.id;
+        const {subscriptionId}=req.body;
+        const subscription=await Models.subscriptionBuyModel.findOne({where:{id:subscriptionId,userId}})
+        if(!subscription)
+        {
+           return res.status(404).json({message:"SUBSCRIPTION NOT FOUND!"})
+        }
+        else
+        {
+          await Models.subscriptionBuyModel.destroy({where:{id:subscriptionId}})
+        }
+      const Update= await Models.subscriptionModel.update({ status:1, DeleteAt: new Date() },{where:{id:subscriptionId}});
+        return res.status(200).json({message:"SUBSCRIPTION CANCELED!",Update})
+      }
+      catch(error)
+      {
+        console.log(error );
+        return res.status(500).json({message:"ERROR",error})
+      }
   },
   AddCartItem: async (req, res) => {
     try {
@@ -541,6 +566,7 @@ module.exports = {
           productId,
           Quantity,
         });
+
       }
       const cartData = await Models.cartManageModel.findOne({
         where: { id: cart.id },
@@ -558,9 +584,14 @@ module.exports = {
           },
         ],
       });
+      const countProduct=await Models.cartModel.findAndCountAll({where:{productId},
+      include:[{
+        model:Models.productModel
+      }]})
 
       return res.status(200).json({
         message: "Cart updated successfully",
+        countProduct,
         cartItem,
         cartData,
       });
@@ -1066,6 +1097,31 @@ ${productDetails}
       return res.status(500).json({ message: "ERROR", error });
     }
   },
+  productRange:async(req,res) =>
+  {
+    try
+    {
+      const {title,minPrice,maxPrice}=req.body;
+      if (!minPrice || !maxPrice) {
+      return res.status(400).json({ message: "Please provide minPrice & maxPrice" });
+    }
+      const products=await Models.productModel.findAll({where:{title,
+        price: {
+          [Op.between]: [minPrice, maxPrice]
+        }
+      }})
+      if (products.length === 0) {
+      return res.status(404).json({ message: "No products found in this price range" });
+    }
+       
+      return res.status(200).json({message:"PRODUCT FILTER!",products})
+    } 
+    catch(error)
+    {
+      console.log(error)
+      return res.status(500).json({message:"ERROR",error})
+    }
+  },
   paymentCreateCOD: async (req, res) => {
     try {
       const userId = req.user.id;
@@ -1234,37 +1290,37 @@ ${productDetails}
       return res.status(500).json({ message: "ERROR" });
     }
   },
-  generatePdfFromApi: async (req, res) => {
-    try {
-      // 1️⃣ Fetch data from 3rd-party API
-      const apiResponse = await axios.get(
-        "https://jsonplaceholder.typicode.com/users"
-      );
-      const users = apiResponse.data; // example data
+  // generatePdfFromApi: async (req, res) => {
+  //   try {
+  //     // 1️⃣ Fetch data from 3rd-party API
+  //     const apiResponse = await axios.get(
+  //       "https://jsonplaceholder.typicode.com/users"
+  //     );
+  //     const users = apiResponse.data; // example data
 
-      // 2️⃣ Create PDF
-      const doc = new PDFDocument();
+  //     // 2️⃣ Create PDF
+  //     const doc = new PDFDocument();
 
-      // Set response headers
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", "attachment; filename=users.pdf");
+  //     // Set response headers
+  //     res.setHeader("Content-Type", "application/pdf");
+  //     res.setHeader("Content-Disposition", "attachment; filename=users.pdf");
 
-      // Pipe PDF to response
-      doc.pipe(res);
+  //     // Pipe PDF to response
+  //     doc.pipe(res);
 
-      // Add PDF content
-      doc.fontSize(20).text("Users Report", { align: "center" });
-      doc.moveDown();
+  //     // Add PDF content
+  //     doc.fontSize(20).text("Users Report", { align: "center" });
+  //     doc.moveDown();
 
-      users.forEach((user, index) => {
-        doc.fontSize(12).text(`${index + 1}. ${user.name} - ${user.email}`);
-      });
+  //     users.forEach((user, index) => {
+  //       doc.fontSize(12).text(`${index + 1}. ${user.name} - ${user.email}`);
+  //     });
 
-      // Finalize PDF
-      doc.end();
-    } catch (error) {
-      console.error(error);
-      res.status(500).send("Failed to generate PDF");
-    }
-  },
+  //     // Finalize PDF
+  //     doc.end();
+  //   } catch (error) {
+  //     console.error(error);
+  //     res.status(500).send("Failed to generate PDF");
+  //   }
+  // },
 };

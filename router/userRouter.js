@@ -50,9 +50,11 @@ router.get('/getToken',authentication,userController.getToken)
 router.post('/createCard',authentication,userController.createCard)
 router.post('/cardList',authentication,userController.cardList)
 router.post('/createPayment',authentication,userController.createPayment)
-router.get("/generatePdfFromApi",userController.generatePdfFromApi);
+// router.get("/generatePdfFromApi",userController.generatePdfFromApi);
 router.post('/stripeIntent',authentication,userController.stripeIntent)
 router.post("/orders",authentication,driverController.orders)
 router.post('/productCount',authentication,driverController.productCount)
 router.post('/updateDriverStatus',authentication,driverController.updateDriverStatus)
+router.post('/productRange',authentication,userController.productRange)
+router.post('/subscriptionCancel',authentication,userController.subscriptionCancel)
 module.exports=router

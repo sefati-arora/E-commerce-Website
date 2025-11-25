@@ -1449,6 +1449,52 @@
                 ]
             }
         },
+        "/api/productRange":{
+              "post":{
+                   "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-productRange-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters":[
+                    {
+                       "name":"title",
+                       "in":"formData",
+                       "description":"ENTER TITLE",
+                       "type":"string",
+                       "required":true,
+                       "value":"TITLE"
+                    },
+                     {
+                       "name":"minPrice",
+                       "in":"formData",
+                       "description":"ENTER MIN PRICE",
+                       "type":"string",
+                       "required":true,
+                       "value":"minPrice"
+                    },
+                     {
+                       "name":"maxPrice",
+                       "in":"formData",
+                       "description":"ENTER MAX PRICE",
+                       "type":"string",
+                       "required":true,
+                       "value":"maxPrice"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PRODUCT RANGE BETWEEN MINPRICE AND MAXPRICE GET SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+              }
+        },
         "definitions": {}
     }
 }
