@@ -117,6 +117,24 @@ module.exports = {
       if (!driver) return res.status(404).json({ message: "NO DRIVER FOUND!" });
       const order = await Models.orderModel.findOne({
         where: { id: orderId },
+         include: [
+          {
+            model: Models.userModel,
+            as: "DRIVER DETAILS:",
+          },
+          {
+            model: Models.addressModel,
+            as: "USER ADDRESS:",
+          },
+          {
+            model: Models.storeModel,
+            as: "STORE DETAILS:",
+            include:[{
+                model:Models.productModel,
+                as:"productDetails:"
+            }]
+          },
+        ],
       });
       let notificationMessage;
 
@@ -149,25 +167,7 @@ module.exports = {
       console.log(notification);
 
       const updatedOrder = await Models.orderModel.findOne({
-        where: { id: orderId },
-         include: [
-          {
-            model: Models.userModel,
-            as: "DRIVER DETAILS:",
-          },
-          {
-            model: Models.addressModel,
-            as: "USER ADDRESS:",
-          },
-          {
-            model: Models.storeModel,
-            as: "STORE DETAILS:",
-            include:[{
-                model:Models.productModel,
-                as:"productDetails:"
-            }]
-          },
-        ],
+        where: { id: orderId }
       });
 
       return res

@@ -56,6 +56,82 @@
                 ]
             }
         },
+        "/api/productCount":{
+          "post":{
+              "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-productCount-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name":"productId",
+                        "in":"formData",
+                        "description":"ENTER PRODUCTID",
+                        "type":"string",
+                        "required":true,
+                        "vale":"PRODUCT ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": " PRODUCT COUNT SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+          }
+        },
+        "api/updateDriverStatus":{
+            "post":{
+                  "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-updateDriverStatus-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name":"productId",
+                        "in":"formData",
+                        "description":"ENTER PRODUCTID",
+                        "type":"string",
+                        "required":true,
+                        "vale":"PRODUCT ID"
+                    },
+                    {
+                        "name":"storeId",
+                        "in":"formData",
+                        "description":"ENTER STOREID",
+                        "type":"string",
+                        "required":true,
+                        "vale":"STORE ID"
+                    },
+                    {
+                        "name":"orderId",
+                        "in":"formData",
+                        "description":"ENTER orderId",
+                        "type":"string",
+                        "required":true,
+                        "vale":"ORDER ID"
+                    }
+                ],
+                 "responses": {
+                    "200": {
+                        "description": " UPDATE STATUS AND ORDER DETAILS GET SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
          "definitions": {}
      }
 }
