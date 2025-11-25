@@ -1,0 +1,61 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "project name",
+        "description": "project description",
+        "version": "1.0"
+    },
+    "produces": [
+        "application/json"
+    ],
+    "basePath": "/",
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "authorization",
+            "in": "header"
+        }
+    },
+     "paths": {
+        "/api/orders":
+        {
+            "post":{
+                 "x-swagger-router-controller": "middleware-name1",
+                "operationId": "api-orders-post",
+                "tags": [
+                    "Application User"
+                ],
+                "description": "",
+                "parameters": [
+                    {
+                        "name":"orderId",
+                        "in":"formData",
+                        "description":"ENTER ORDER ID",
+                        "type":"string",
+                        "required":true,
+                        "value":"ORDER ID"
+                    },
+                      {
+                        "name":"productId",
+                        "in":"formData",
+                        "description":"ENTER PRODUCT ID",
+                        "type":"string",
+                        "required":true,
+                        "value":"product ID"
+                    }
+                ],
+                 "responses": {
+                    "200": {
+                        "description": " ORDER ACTIVE AND PENDING, CHECK AND COUNT SUCCESSFULLY"
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+         "definitions": {}
+     }
+}

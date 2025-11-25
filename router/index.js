@@ -13,7 +13,7 @@ router.get("/", (req, res) => {
 //   return res.status(200).send(jsonData);
 // });
 router.get("/api", async (req, res) => {
-  let jsonData = require("../config/userSwagger.json");
+  let jsonData = require("../config/driverSwagger.json");
   delete jsonData.host;
   jsonData.host = await commonHelper.getHost(req, res); // Dynamically set the host
   console.log("jsonData.host:  ", jsonData.host);

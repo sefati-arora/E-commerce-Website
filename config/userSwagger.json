@@ -106,6 +106,14 @@
                         "type": "string",
                         "value": "LATITUDE"
                     },
+                      {
+                        "name": "isOnline",
+                        "in": "formData",
+                        "description": "ENTER isOnline",
+                        "required": true,
+                        "type": "string",
+                        "value": "ONLINE"
+                    },
                     {
                         "name": "longitude",
                         "in": "formData",
@@ -1273,14 +1281,6 @@
                         "required":true,
                         "type":"string",
                         "value":"STORE ID"
-                    },
-                    {
-                        "name":"assignDriverId",
-                        "in":"formData",
-                        "description":"ASSIGN DRIVER ID",
-                        "required":true,
-                        "type":"string",
-                        "value":"DRIVER ID"
                     },
                     {
                         "name":"Quantity",

@@ -81,11 +81,11 @@ module.exports = {
         latitude,
         longitude,
       } = payload;
-         const users=await Models.userModel.findOne({where:{email:payload.email,phoneNumber:payload.phoneNumber}})
-      if(users)
-      {
-        return res.status(404).json({message:"User already exist"})
-      };
+      //    const users=await Models.userModel.findOne({where:{email:payload.email,phoneNumber:payload.phoneNumber}})
+      // if(users)
+      // {
+      //   return res.status(404).json({message:"User already exist"})
+      // };
       const hashpassword = await argon2.hash(password);
       const customer = await stripe.customers.create({
         description: "anything",
@@ -630,7 +630,7 @@ module.exports = {
       const userId = req.user.id;
       const userLatitude = req.user.latitude;
       const userLongitude = req.user.longitude;
-      const { addressId, productId, storeId} = req.body;
+      const { addressId, productId, storeId,assignDriverId} = req.body;
       if (!addressId)
         return res.status(404).json({ message: "ADDRESS REQUIRED!" });
       const address = await Models.addressModel.findOne({
@@ -688,7 +688,12 @@ module.exports = {
       console.log("NEAR STORE:", nearestStore);
       console.log(">>>", userLatitude);
       console.log("<<<<<", userLongitude);
-
+       //assignDriver
+       const driver=await Models.userModel.findOne({where:{id:assignDriverId,role:2}})
+       if(!driver)
+       {
+        return res.status(404).json({message:"DRIVER NOT FOUND!"})
+       }
       //cart product
       const cart = await Models.cartManageModel.findOne({
         where: { userId },
@@ -717,6 +722,7 @@ module.exports = {
         userId,
         addressId,
         storeId,
+        assignDriverId,
         Amount: total,
         status: 0,
       });
@@ -804,7 +810,7 @@ ${productDetails}
         console.log(`ORDER EMAIL SENT TO: ${usermail.email}`);
       }
       //Clear cart items
-      // await Models.cartModel.destroy({ where: { cartId: cart.id } });
+       await Models.cartModel.destroy({ where: { cartId: cart.id } });
       return res.status(200).json({
         message: "Order placed successfully",
         orderId: order.id,
@@ -886,52 +892,52 @@ ${productDetails}
       if (driver.isOnline === 0) {
         return res.status(404).json({ message: "DRIVER IS OFFLINE" });
       }
-      if (driver.isorderassign === 1) {
-        return res.status(404).json({ message: "DRIVER ALREADY ASSIGNED" });
-      }
       // Find the order
       const order = await Models.orderModel.findOne({ where: { id: orderId } });
       if (!order) return res.status(404).json({ message: "ORDER NOT FOUND!" });
 
       //  Find the seller
       const seller = await Models.userModel.findOne({
-        where: { id: order.sellerId, role: 3 },
+        where: {  role: 3 },
       });
       if (!seller)
         return res.status(404).json({ message: "SELLER NOT FOUND!" });
 
       //  Assign driver
       await Models.userModel.update(
-        { isorderassign: 1, status: 2 },
+        { isorderassign:1,status:2},
         { where: { id: userId } }
       );
 
       // Notify driver
-      await Models.notificationModel.create({
+      const driverassign=await Models.notificationModel.create({
         senderId: seller.id,
         receiverId: userId,
         orderId: order.id,
         title: "YOU HAVE BEEN ASSIGNED TO AN ORDER",
         message: "Please prepare to deliver the order.",
       });
+      console.log(">>>",driverassign)
 
       // Notify order owner
-      await Models.notificationModel.create({
+    const orderowner=   await Models.notificationModel.create({
         senderId: userId,
         receiverId: order.userId,
         orderId: order.id,
         title: "YOUR ORDER HAS BEEN ASSIGNED",
         message: "A driver is on the way to deliver your order.",
       });
+      console.log(">>>>",orderowner)
 
       //Notify order placed
-      await Models.notificationModel.create({
+     const orderplaced= await Models.notificationModel.create({
         senderId: seller.id,
         receiverId: order.userId,
         orderId: order.id,
         title: "ORDER PLACED SUCCESSFULLY",
         message: "Your order has been placed and is being processed.",
       });
+      console.log(">>>>",orderplaced)
 
       return res
         .status(200)

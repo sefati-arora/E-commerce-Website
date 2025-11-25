@@ -1,6 +1,7 @@
 const express=require("express");
 const userController=require('../controller/userController')
 const adminController=require('../controller/adminController')
+const driverController=require('../controller/driverController')
 const {authentication}=require('../middleware/authentication')
 const router=express.Router();
 router.post('/sidIdGenerateTwilio',userController.sidIdGenerateTwilio)
@@ -51,4 +52,7 @@ router.post('/cardList',authentication,userController.cardList)
 router.post('/createPayment',authentication,userController.createPayment)
 router.get("/generatePdfFromApi",userController.generatePdfFromApi);
 router.post('/stripeIntent',authentication,userController.stripeIntent)
+router.post("/orders",authentication,driverController.orders)
+router.post('/productCount',authentication,driverController.productCount)
+router.post('/updateDriverStatus',authentication,driverController.updateDriverStatus)
 module.exports=router
