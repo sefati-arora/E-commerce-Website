@@ -1305,6 +1305,14 @@
                         "required":true,
                         "type":"string",
                         "value":"CARTID"
+                    },
+                     {
+                        "name":"assignDriverId",
+                        "in":"formData",
+                        "description":"ENTER assignDriverId",
+                        "required":true,
+                        "type":"string",
+                        "value":"assignDriverId"
                     }
                 ],
                  "responses": {

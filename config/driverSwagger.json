@@ -86,7 +86,7 @@
                 ]
           }
         },
-        "api/updateDriverStatus":{
+        "/api/updateDriverStatus":{
             "post":{
                   "x-swagger-router-controller": "middleware-name1",
                 "operationId": "api-updateDriverStatus-post",
